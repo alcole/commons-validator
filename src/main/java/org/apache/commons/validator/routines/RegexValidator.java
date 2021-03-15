@@ -124,7 +124,7 @@ public class RegexValidator implements Serializable {
         patterns = new Pattern[regexs.length];
         int flags =  (caseSensitive ? 0: Pattern.CASE_INSENSITIVE);
         for (int i = 0; i < regexs.length; i++) {
-            if (regexs[i] == null || regexs[i].length() == 0) {
+            if (regexs[i] == null || regexs[i].isEmpty()) {
                 throw new IllegalArgumentException("Regular expression[" + i + "] is missing");
             }
             patterns[i] =  Pattern.compile(regexs[i], flags);
@@ -142,8 +142,8 @@ public class RegexValidator implements Serializable {
         if (value == null) {
             return false;
         }
-        for (int i = 0; i < patterns.length; i++) {
-            if (patterns[i].matcher(value).matches()) {
+        for (Pattern pattern : patterns) {
+            if (pattern.matcher(value).matches()) {
                 return true;
             }
         }
@@ -162,8 +162,8 @@ public class RegexValidator implements Serializable {
         if (value == null) {
             return null;
         }
-        for (int i = 0; i < patterns.length; i++) {
-            Matcher matcher = patterns[i].matcher(value);
+        for (Pattern pattern : patterns) {
+            Matcher matcher = pattern.matcher(value);
             if (matcher.matches()) {
                 int count = matcher.groupCount();
                 String[] groups = new String[count];
@@ -189,8 +189,8 @@ public class RegexValidator implements Serializable {
         if (value == null) {
             return null;
         }
-        for (int i = 0; i < patterns.length; i++) {
-            Matcher matcher = patterns[i].matcher(value);
+        for (Pattern pattern : patterns) {
+            Matcher matcher = pattern.matcher(value);
             if (matcher.matches()) {
                 int count = matcher.groupCount();
                 if (count == 1) {

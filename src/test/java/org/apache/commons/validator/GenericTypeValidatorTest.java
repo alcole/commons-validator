@@ -18,36 +18,35 @@ package org.apache.commons.validator;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 
 import org.xml.sax.SAXException;
-                                                          
-/**                                                       
+
+/**
  * Performs Validation Test for type validations.
  *
  * @version $Revision$
  */
 public class GenericTypeValidatorTest extends AbstractCommonTest {
-   
+
    /**
-    * The key used to retrieve the set of validation 
+    * The key used to retrieve the set of validation
     * rules from the xml file.
     */
-   protected static String FORM_KEY = "typeForm";   
+   protected static String FORM_KEY = "typeForm";
 
    /**
     * The key used to retrieve the validator action.
     */
    protected static String ACTION = "byte";
 
-   public GenericTypeValidatorTest(String name) {                  
-       super(name);                                      
-   }                                                     
+   public GenericTypeValidatorTest(String name) {
+       super(name);
+   }
 
    /**
-    * Load <code>ValidatorResources</code> from 
+    * Load <code>ValidatorResources</code> from
     * validator-type.xml.
     */
    @Override
@@ -72,25 +71,23 @@ protected void tearDown() {
       info.setLong("88000");
       info.setFloat("12.1555f");
       info.setDouble("129.1551511111d");
-      
-      // Construct validator based on the loaded resources 
+
+      // Construct validator based on the loaded resources
       // and the form key
       Validator validator = new Validator(resources, FORM_KEY);
-      // add the name bean to the validator as a resource 
+      // add the name bean to the validator as a resource
       // for the validations to be performed on.
       validator.setParameter(Validator.BEAN_PARAM, info);
 
       // Get results of the validation.
-      ValidatorResults results = null;
-      
-      // throws ValidatorException, 
-      // but we aren't catching for testing 
-      // since no validation methods we use 
+      // throws ValidatorException,
+      // but we aren't catching for testing
+      // since no validation methods we use
       // throw this
-      results = validator.validate();
-      
+      ValidatorResults results = validator.validate();
+
       assertNotNull("Results are null.", results);
-      
+
       Map<String, ?> hResultValues = results.getResultValueMap();
 
       assertTrue("Expecting byte result to be an instance of Byte.", (hResultValues.get("byte") instanceof Byte));
@@ -99,22 +96,21 @@ protected void tearDown() {
       assertTrue("Expecting long result to be an instance of Long.", (hResultValues.get("long") instanceof Long));
       assertTrue("Expecting float result to be an instance of Float.", (hResultValues.get("float") instanceof Float));
       assertTrue("Expecting double result to be an instance of Double.", (hResultValues.get("double") instanceof Double));
-      
-      for (Iterator<String> i = hResultValues.keySet().iterator(); i.hasNext(); ) {
-         String key = i.next();
+
+      for (String key : hResultValues.keySet()) {
          Object value = hResultValues.get(key);
-         
+
          assertNotNull("value ValidatorResults.getResultValueMap() should not be null.", value);
       }
-      
+
       //ValidatorResult result = results.getValidatorResult("value");
-      
+
       //assertNotNull(ACTION + " value ValidatorResult should not be null.", result);
       //assertTrue(ACTION + " value ValidatorResult should contain the '" + ACTION +"' action.", result.containsAction(ACTION));
       //assertTrue(ACTION + " value ValidatorResult for the '" + ACTION +"' action should have " + (passed ? "passed" : "failed") + ".", (passed ? result.isValid(ACTION) : !result.isValid(ACTION)));
 
    }
-   
+
    /**
     * Tests the us locale
     */
@@ -153,26 +149,24 @@ protected void tearDown() {
     * Tests the locale.
     */
    private Map<String, ?> localeTest(TypeBean info, Locale locale) throws ValidatorException {
-     
-      // Construct validator based on the loaded resources 
+
+      // Construct validator based on the loaded resources
       // and the form key
       Validator validator = new Validator(resources, "typeLocaleForm");
-      // add the name bean to the validator as a resource 
+      // add the name bean to the validator as a resource
       // for the validations to be performed on.
       validator.setParameter(Validator.BEAN_PARAM, info);
       validator.setParameter("java.util.Locale", locale);
 
       // Get results of the validation.
-      ValidatorResults results = null;
-      
-      // throws ValidatorException, 
-      // but we aren't catching for testing 
-      // since no validation methods we use 
+      // throws ValidatorException,
+      // but we aren't catching for testing
+      // since no validation methods we use
       // throw this
-      results = validator.validate();
-      
+      ValidatorResults results = validator.validate();
+
       assertNotNull("Results are null.", results);
-      
+
       Map<String, ?> hResultValues = results.getResultValueMap();
 
       assertTrue("Expecting byte result to be an instance of Byte for locale: "+locale, (hResultValues.get("byte") instanceof Byte));
@@ -182,14 +176,13 @@ protected void tearDown() {
       assertTrue("Expecting float result to be an instance of Float for locale: "+locale, (hResultValues.get("float") instanceof Float));
       assertTrue("Expecting double result to be an instance of Double for locale: "+locale, (hResultValues.get("double") instanceof Double));
       assertTrue("Expecting date result to be an instance of Date for locale: "+locale, (hResultValues.get("date") instanceof Date));
-      
-      for (Iterator<String> i = hResultValues.keySet().iterator(); i.hasNext(); ) {
-         String key = i.next();
+
+      for (String key : hResultValues.keySet()) {
          Object value = hResultValues.get(key);
-         
+
          assertNotNull("value ValidatorResults.getResultValueMap() should not be null for locale: "+locale, value);
       }
       return hResultValues;
    }
 
-}                                                         
+}

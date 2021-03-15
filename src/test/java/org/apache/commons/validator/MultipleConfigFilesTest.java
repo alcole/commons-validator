@@ -24,7 +24,7 @@ import junit.framework.TestCase;
 import org.xml.sax.SAXException;
 
 /**
- * Tests that validator rules split between 2 different XML files get 
+ * Tests that validator rules split between 2 different XML files get
  * merged properly.
  *
  * @version $Revision$
@@ -35,7 +35,7 @@ public class MultipleConfigFilesTest extends TestCase {
      * Resources used for validation tests.
      */
     private ValidatorResources resources = null;
-    
+
     /**
      * The key used to retrieve the set of validation
      * rules from the xml file.
@@ -55,7 +55,7 @@ public class MultipleConfigFilesTest extends TestCase {
         super(name);
     }
 
-    /** 
+    /**
      * Load <code>ValidatorResources</code> from multiple xml files.
      */
     @Override
@@ -69,8 +69,8 @@ public class MultipleConfigFilesTest extends TestCase {
 
         this.resources = new ValidatorResources(streams);
 
-        for (int i = 0; i < streams.length; i++) {
-            streams[i].close();
+        for (InputStream stream : streams) {
+            stream.close();
         }
     }
 
@@ -99,7 +99,7 @@ public class MultipleConfigFilesTest extends TestCase {
         Field field2 = form2.getField("testProperty2");
         assertEquals("testProperty2 - const 1", "testConstValue1", field2.getVarValue("var21"));
         assertEquals("testProperty2 - const 2", "testConstValue2", field2.getVarValue("var22"));
- 
+
         // *********** 'fr' locale *******************
 
         // Check the form from the first config file exists
@@ -136,13 +136,11 @@ public class MultipleConfigFilesTest extends TestCase {
         validator.setParameter(Validator.BEAN_PARAM, name);
 
         // Get results of the validation.
-        ValidatorResults results = null;
-
         // throws ValidatorException,
         // but we aren't catching for testing
         // since no validation methods we use
         // throw this
-        results = validator.validate();
+        ValidatorResults results = validator.validate();
 
         assertNotNull("Results are null.", results);
 
@@ -177,9 +175,7 @@ public class MultipleConfigFilesTest extends TestCase {
         validator.setParameter(Validator.BEAN_PARAM, name);
 
         // Get results of the validation.
-        ValidatorResults results = null;
-
-        results = validator.validate();
+        ValidatorResults results = validator.validate();
 
         assertNotNull("Results are null.", results);
 
@@ -212,9 +208,7 @@ public class MultipleConfigFilesTest extends TestCase {
         validator.setParameter(Validator.BEAN_PARAM, name);
 
         // Get results of the validation.
-        ValidatorResults results = null;
-
-        results = validator.validate();
+        ValidatorResults results = validator.validate();
 
         assertNotNull("Results are null.", results);
 
@@ -247,9 +241,7 @@ public class MultipleConfigFilesTest extends TestCase {
         validator.setParameter(Validator.BEAN_PARAM, name);
 
         // Get results of the validation.
-        ValidatorResults results = null;
-
-        results = validator.validate();
+        ValidatorResults results = validator.validate();
 
         assertNotNull("Results are null.", results);
 

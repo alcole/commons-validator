@@ -257,7 +257,7 @@ public class Field implements Cloneable, Serializable {
         while (st.hasMoreTokens()) {
             String depend = st.nextToken().trim();
 
-            if (depend != null && depend.length() > 0) {
+            if (depend != null && !depend.isEmpty()) {
                 this.dependencyList.add(depend);
             }
         }
@@ -330,7 +330,7 @@ public class Field implements Cloneable, Serializable {
      */
     public void addArg(Arg arg) {
         // TODO this first if check can go away after arg0, etc. are removed from dtd
-        if (arg == null || arg.getKey() == null || arg.getKey().length() == 0) {
+        if (arg == null || arg.getKey() == null || arg.getKey().isEmpty()) {
             return;
         }
 
@@ -339,7 +339,7 @@ public class Field implements Cloneable, Serializable {
 
         Map<String, Arg> argMap = this.args[arg.getPosition()];
         if (argMap == null) {
-            argMap = new HashMap<String, Arg>();
+            argMap = new HashMap<>();
             this.args[arg.getPosition()] = argMap;
         }
 
@@ -371,11 +371,11 @@ public class Field implements Cloneable, Serializable {
 
         // determine the position of the last argument with
         // the same name or the last default argument
-        String key = arg.getName() == null ? DEFAULT_ARG : arg.getName();
+        String keyName = arg.getName() == null ? DEFAULT_ARG : arg.getName();
         int lastPosition = -1;
         int lastDefault  = -1;
         for (int i = 0; i < args.length; i++) {
-            if (args[i] != null && args[i].containsKey(key)) {
+            if (args[i] != null && args[i].containsKey(keyName)) {
                 lastPosition = i;
             }
             if (args[i] != null && args[i].containsKey(DEFAULT_ARG)) {
@@ -451,13 +451,13 @@ public class Field implements Cloneable, Serializable {
      * @since Validator 1.1.1
      */
     public Arg[] getArgs(String key){
-        Arg[] args = new Arg[this.args.length];
+        Arg[] argList = new Arg[this.args.length];
 
         for (int i = 0; i < this.args.length; i++) {
-            args[i] = this.getArg(key, i);
+            argList[i] = this.getArg(key, i);
         }
 
-        return args;
+        return argList;
     }
 
     /**
@@ -496,9 +496,8 @@ public class Field implements Cloneable, Serializable {
     public String getVarValue(String mainKey) {
         String value = null;
 
-        Object o = getVarMap().get(mainKey);
-        if (o != null && o instanceof Var) {
-            Var v = (Var) o;
+        Var v = getVarMap().get(mainKey);
+        if (v != null) {
             value = v.getValue();
         }
 
@@ -542,7 +541,7 @@ public class Field implements Cloneable, Serializable {
      * @return Whether the Field is indexed.
      */
     public boolean isIndexed() {
-        return ((indexedListProperty != null && indexedListProperty.length() > 0));
+        return (indexedListProperty != null && !indexedListProperty.isEmpty());
     }
 
     /**
@@ -567,10 +566,9 @@ public class Field implements Cloneable, Serializable {
         this.generateKey();
 
         // Process FormSet Constants
-        for (Iterator<Entry<String, String>> i = constants.entrySet().iterator(); i.hasNext();) {
-            Entry<String, String> entry = i.next();
-            String key = entry.getKey();
-            String key2 = TOKEN_START + key + TOKEN_END;
+        for (Entry<String, String> entry : constants.entrySet()) {
+            String key1 = entry.getKey();
+            String key2 = TOKEN_START + key1 + TOKEN_END;
             String replaceValue = entry.getValue();
 
             property = ValidatorUtils.replace(property, key2, replaceValue);
@@ -581,10 +579,9 @@ public class Field implements Cloneable, Serializable {
         }
 
         // Process Global Constants
-        for (Iterator<Entry<String, String>> i = globalConstants.entrySet().iterator(); i.hasNext();) {
-            Entry<String, String> entry = i.next();
-            String key = entry.getKey();
-            String key2 = TOKEN_START + key + TOKEN_END;
+        for (Entry<String, String> entry : globalConstants.entrySet()) {
+            String key1 = entry.getKey();
+            String key2 = TOKEN_START + key1 + TOKEN_END;
             String replaceValue = entry.getValue();
 
             property = ValidatorUtils.replace(property, key2, replaceValue);
@@ -595,10 +592,9 @@ public class Field implements Cloneable, Serializable {
         }
 
         // Process Var Constant Replacement
-        for (Iterator<String> i = getVarMap().keySet().iterator(); i.hasNext();) {
-            String key = i.next();
-            String key2 = TOKEN_START + TOKEN_VAR + key + TOKEN_END;
-            Var var = this.getVar(key);
+        for (String key1 : getVarMap().keySet()) {
+            String key2 = TOKEN_START + TOKEN_VAR + key1 + TOKEN_END;
+            Var var = this.getVar(key1);
             String replaceValue = var.getValue();
 
             this.processMessageComponents(key2, replaceValue);
@@ -628,8 +624,7 @@ public class Field implements Cloneable, Serializable {
         String varKey = TOKEN_START + TOKEN_VAR;
         // Process Messages
         if (key != null && !key.startsWith(varKey)) {
-            for (Iterator<Msg> i = getMsgMap().values().iterator(); i.hasNext();) {
-                Msg msg = i.next();
+            for (Msg msg : getMsgMap().values()) {
                 msg.setKey(ValidatorUtils.replace(msg.getKey(), key, replaceValue));
             }
         }
@@ -642,9 +637,8 @@ public class Field implements Cloneable, Serializable {
      * pairs passed in.
      */
     private void processArg(String key, String replaceValue) {
-        for (int i = 0; i < this.args.length; i++) {
+        for (Map<String, Arg> argMap : this.args) {
 
-            Map<String, Arg> argMap = this.args[i];
             if (argMap == null) {
                 continue;
             }
@@ -700,7 +694,7 @@ public class Field implements Cloneable, Serializable {
                 continue;
             }
 
-            Map<String, Arg> argMap = new HashMap<String, Arg>(this.args[i]);
+            Map<String, Arg> argMap = new HashMap<>(this.args[i]);
             Iterator<Entry<String, Arg>> iter = argMap.entrySet().iterator();
             while (iter.hasNext()) {
                 Entry<String, Arg> entry = iter.next();
@@ -735,12 +729,11 @@ public class Field implements Cloneable, Serializable {
 
         if (hVars != null) {
             results.append("\t\tVars:\n");
-            for (Iterator<?> i = getVarMap().keySet().iterator(); i.hasNext();) {
-                Object key = i.next();
+            for (Object key1 : getVarMap().keySet()) {
                 results.append("\t\t\t");
-                results.append(key);
+                results.append(key1);
                 results.append("=");
-                results.append(getVarMap().get(key));
+                results.append(getVarMap().get(key1));
                 results.append("\n");
             }
         }
@@ -756,29 +749,25 @@ public class Field implements Cloneable, Serializable {
      * or, the property found is not indexed.
      */
     Object[] getIndexedProperty(Object bean) throws ValidatorException {
-        Object indexedProperty = null;
+        Object indexProp = null;
 
         try {
-            indexedProperty =
+            indexProp =
                 PropertyUtils.getProperty(bean, this.getIndexedListProperty());
 
-        } catch(IllegalAccessException e) {
-            throw new ValidatorException(e.getMessage());
-        } catch(InvocationTargetException e) {
-            throw new ValidatorException(e.getMessage());
-        } catch(NoSuchMethodException e) {
+        } catch(IllegalAccessException|InvocationTargetException|NoSuchMethodException e) {
             throw new ValidatorException(e.getMessage());
         }
 
-        if (indexedProperty instanceof Collection) {
-            return ((Collection<?>) indexedProperty).toArray();
+        if (indexProp instanceof Collection) {
+            return ((Collection<?>) indexProp).toArray();
 
-        } else if (indexedProperty.getClass().isArray()) {
-            return (Object[]) indexedProperty;
-
-        } else {
-            throw new ValidatorException(this.getKey() + " is not indexed");
         }
+        if (indexProp.getClass().isArray()) {
+            return (Object[]) indexProp;
+
+        }
+        throw new ValidatorException(this.getKey() + " is not indexed");
 
     }
     /**
@@ -789,29 +778,26 @@ public class Field implements Cloneable, Serializable {
      * or, the property found is not indexed.
      */
     private int getIndexedPropertySize(Object bean) throws ValidatorException {
-        Object indexedProperty = null;
+        Object indexProp = null;
 
         try {
-            indexedProperty =
+            indexProp =
                 PropertyUtils.getProperty(bean, this.getIndexedListProperty());
 
-        } catch(IllegalAccessException e) {
-            throw new ValidatorException(e.getMessage());
-        } catch(InvocationTargetException e) {
-            throw new ValidatorException(e.getMessage());
-        } catch(NoSuchMethodException e) {
+        } catch(IllegalAccessException|InvocationTargetException|NoSuchMethodException e) {
             throw new ValidatorException(e.getMessage());
         }
 
-        if (indexedProperty == null) {
+        if (indexProp == null) {
             return 0;
-        } else if (indexedProperty instanceof Collection) {
-            return ((Collection<?>)indexedProperty).size();
-        } else if (indexedProperty.getClass().isArray()) {
-            return ((Object[])indexedProperty).length;
-        } else {
-            throw new ValidatorException(this.getKey() + " is not indexed");
         }
+        if (indexProp instanceof Collection) {
+            return ((Collection<?>)indexProp).size();
+        }
+        if (indexProp.getClass().isArray()) {
+            return ((Object[])indexProp).length;
+        }
+        throw new ValidatorException(this.getKey() + " is not indexed");
 
     }
 

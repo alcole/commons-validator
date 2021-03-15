@@ -155,7 +155,7 @@ public abstract class AbstractNumberValidator extends AbstractFormatValidator {
     protected Object parse(String value, String pattern, Locale locale) {
 
         value = (value == null ? null : value.trim());
-        if (value == null || value.length() == 0) {
+        if (value == null || value.isEmpty()) {
             return null;
         }
         Format formatter = getFormat(pattern, locale);
@@ -188,7 +188,7 @@ public abstract class AbstractNumberValidator extends AbstractFormatValidator {
     protected Format getFormat(String pattern, Locale locale) {
 
         NumberFormat formatter = null;
-        boolean usePattern = (pattern != null && pattern.length() > 0);
+        boolean usePattern = pattern != null && !pattern.isEmpty();
         if (!usePattern) {
             formatter = (NumberFormat)getFormat(locale);
         } else if (locale == null) {
@@ -198,7 +198,7 @@ public abstract class AbstractNumberValidator extends AbstractFormatValidator {
             formatter = new DecimalFormat(pattern, symbols);
         }
 
-        if (determineScale(formatter) == 0) {
+        if (!isAllowFractions()) {
             formatter.setParseIntegerOnly(true);
         }
         return formatter;
@@ -266,6 +266,9 @@ public abstract class AbstractNumberValidator extends AbstractFormatValidator {
                 formatter = NumberFormat.getInstance();
             } else {
                 formatter = NumberFormat.getInstance(locale);
+            }
+            if (!isAllowFractions()) {
+                formatter.setParseIntegerOnly(true);
             }
             break;
         }

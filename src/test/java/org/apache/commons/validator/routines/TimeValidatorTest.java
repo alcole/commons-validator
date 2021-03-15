@@ -25,7 +25,7 @@ import java.util.TimeZone;
 
 /**
  * Test Case for TimeValidator.
- * 
+ *
  * @version $Revision$
  */
 public class TimeValidatorTest extends TestCase {
@@ -36,10 +36,10 @@ public class TimeValidatorTest extends TestCase {
     protected TimeValidator validator;
 
     protected String[] patternValid = new String[] {
-                       "23-59-59" 
+                       "23-59-59"
                       ,"00-00-00"
                       ,"00-00-01"
-                      ,"0-0-0" 
+                      ,"0-0-0"
                       ,"1-12-1"
                       ,"10-49-18"
                       ,"16-23-46"};
@@ -52,10 +52,10 @@ public class TimeValidatorTest extends TestCase {
                       ,createDate(null, 104918, 0)
                       ,createDate(null, 162346, 0)};
     protected String[] localeValid = new String[] {
-                      "23:59" 
+                      "23:59"
                      ,"00:00"
                      ,"00:01"
-                     ,"0:0" 
+                     ,"0:0"
                      ,"1:12"
                      ,"10:49"
                      ,"16:23"};
@@ -70,10 +70,10 @@ public class TimeValidatorTest extends TestCase {
     protected String[] patternInvalid = new String[] {
                          "24-00-00"  // midnight
                         ,"24-00-01"  // past midnight
-                        ,"25-02-03"  // invalid hour 
+                        ,"25-02-03"  // invalid hour
                         ,"10-61-31"  // invalid minute
                         ,"10-01-61"  // invalid second
-                        ,"05:02-29"  // invalid sep 
+                        ,"05:02-29"  // invalid sep
                         ,"0X-01:01"  // invalid sep
                         ,"05-0X-01"  // invalid char
                         ,"10-01-0X"  // invalid char
@@ -84,15 +84,18 @@ public class TimeValidatorTest extends TestCase {
     protected String[] localeInvalid = new String[] {
                          "24:00"  // midnight
                         ,"24:00"  // past midnight
-                        ,"25:02"  // invalid hour 
+                        ,"25:02"  // invalid hour
                         ,"10:61"  // invalid minute
-                        ,"05-02"  // invalid sep 
+                        ,"05-02"  // invalid sep
                         ,"0X:01"  // invalid sep
                         ,"05:0X"  // invalid char
                         ,"01-01"  // invalid pattern
                         ,"10:"     // invalid pattern
                         ,"10::1"    // invalid pattern
                         ,"10:1:"};  // invalid pattern
+
+    private Locale origDefault;
+    private TimeZone defaultZone;
 
     /**
      * Constructor
@@ -106,6 +109,8 @@ public class TimeValidatorTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         validator = new TimeValidator();
+        defaultZone = TimeZone.getDefault();
+        origDefault = Locale.getDefault();
     }
 
     /**
@@ -116,6 +121,8 @@ public class TimeValidatorTest extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
         validator = null;
+        Locale.setDefault(origDefault);
+        TimeZone.setDefault(defaultZone);
     }
 
     /**
@@ -175,12 +182,10 @@ public class TimeValidatorTest extends TestCase {
      */
     public void testTimeZone() {
         // Set the default Locale & TimeZone
-        Locale origDefault = Locale.getDefault();
         Locale.setDefault(Locale.UK);
-        TimeZone defaultZone = TimeZone.getDefault();
         TimeZone.setDefault(GMT);
 
-        Calendar result = null;
+        Calendar result;
 
         // Default Locale, Default TimeZone
         result = validator.validate("18:01");
@@ -236,9 +241,6 @@ public class TimeValidatorTest extends TestCase {
         assertEquals("pattern minute", 05, result.get(Calendar.MINUTE));
         result = null;
 
-        // Restore the original default
-        Locale.setDefault(origDefault);
-        TimeZone.setDefault(defaultZone);
     }
 
     /**
@@ -246,7 +248,6 @@ public class TimeValidatorTest extends TestCase {
      */
     public void testFormat() {
         // Set the default Locale
-        Locale origDefault = Locale.getDefault();
         Locale.setDefault(Locale.UK);
 
         Object test = TimeValidator.getInstance().validate("16:49:23", "HH:mm:ss");
@@ -255,8 +256,6 @@ public class TimeValidatorTest extends TestCase {
         assertEquals("Format locale",  "4:49 PM",  validator.format(test, Locale.US));
         assertEquals("Format default", "16:49",  validator.format(test));
 
-        // Restore the original default
-        Locale.setDefault(origDefault);
     }
 
     /**
@@ -306,7 +305,7 @@ public class TimeValidatorTest extends TestCase {
 
     /**
      * Create a calendar instance for a specified time zone, date and time.
-     * 
+     *
      * @param zone The time zone
      * @param time the time in HH:mm:ss format
      * @param millisecond the milliseconds
@@ -330,7 +329,7 @@ public class TimeValidatorTest extends TestCase {
 
     /**
      * Create a date instance for a specified time zone, date and time.
-     * 
+     *
      * @param zone The time zone
      * @param time the time in HH:mm:ss format
      * @param millisecond the milliseconds

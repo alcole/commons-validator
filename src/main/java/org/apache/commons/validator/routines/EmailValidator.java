@@ -42,9 +42,9 @@ public class EmailValidator implements Serializable {
     private static final String QUOTED_USER = "(\"(\\\\\"|[^\"])*\")";
     private static final String WORD = "((" + VALID_CHARS + "|')+|" + QUOTED_USER + ")";
 
-    private static final String EMAIL_REGEX = "^\\s*?(.+)@(.+?)\\s*$";
+    private static final String EMAIL_REGEX = "^(.+)@(\\S+)$";
     private static final String IP_DOMAIN_REGEX = "^\\[(.*)\\]$";
-    private static final String USER_REGEX = "^\\s*" + WORD + "(\\." + WORD + ")*$";
+    private static final String USER_REGEX = "^" + WORD + "(\\." + WORD + ")*$";
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
     private static final Pattern IP_DOMAIN_PATTERN = Pattern.compile(IP_DOMAIN_REGEX);
@@ -52,7 +52,6 @@ public class EmailValidator implements Serializable {
 
     private static final int MAX_USERNAME_LEN = 64;
 
-    private final boolean allowLocal;
     private final boolean allowTld;
 
     /**
@@ -80,6 +79,8 @@ public class EmailValidator implements Serializable {
      */
     private static final EmailValidator EMAIL_VALIDATOR_WITH_LOCAL_WITH_TLD = new EmailValidator(true, true);
 
+    private final DomainValidator domainValidator;
+
     /**
      * Returns the Singleton instance of this validator.
      *
@@ -98,19 +99,16 @@ public class EmailValidator implements Serializable {
      * @return singleton instance of this validator
      */
     public static EmailValidator getInstance(boolean allowLocal, boolean allowTld) {
-        if(allowLocal) {
+        if (allowLocal) {
             if (allowTld) {
                 return EMAIL_VALIDATOR_WITH_LOCAL_WITH_TLD;
-            } else {
-                return EMAIL_VALIDATOR_WITH_LOCAL;
             }
-        } else {
-            if (allowTld) {
-                return EMAIL_VALIDATOR_WITH_TLD;
-            } else {
-                return EMAIL_VALIDATOR;
-            }
+            return EMAIL_VALIDATOR_WITH_LOCAL;
         }
+        if (allowTld) {
+            return EMAIL_VALIDATOR_WITH_TLD;
+        }
+        return EMAIL_VALIDATOR;
     }
 
     /**
@@ -125,15 +123,34 @@ public class EmailValidator implements Serializable {
     }
 
     /**
+     * constructor for creating instances with the specified domainValidator
+     *
+     * @param allowLocal Should local addresses be considered valid?
+     * @param allowTld Should TLDs be allowed?
+     * @param domainValidator allow override of the DomainValidator.
+     * The instance must have the same allowLocal setting.
+     * @since 1.7
+     */
+    public EmailValidator(boolean allowLocal, boolean allowTld, DomainValidator domainValidator) {
+        this.allowTld = allowTld;
+        if (domainValidator == null) {
+            throw new IllegalArgumentException("DomainValidator cannot be null");
+        }
+        if (domainValidator.isAllowLocal() != allowLocal) {
+            throw new IllegalArgumentException("DomainValidator must agree with allowLocal setting");
+        }
+        this.domainValidator = domainValidator;
+    }
+
+    /**
      * Protected constructor for subclasses to use.
      *
      * @param allowLocal Should local addresses be considered valid?
      * @param allowTld Should TLDs be allowed?
      */
     protected EmailValidator(boolean allowLocal, boolean allowTld) {
-        super();
-        this.allowLocal = allowLocal;
         this.allowTld = allowTld;
+        this.domainValidator = DomainValidator.getInstance(allowLocal);
     }
 
     /**
@@ -142,9 +159,7 @@ public class EmailValidator implements Serializable {
      * @param allowLocal Should local addresses be considered valid?
      */
     protected EmailValidator(boolean allowLocal) {
-        super();
-        this.allowLocal = allowLocal;
-        this.allowTld = false;
+        this(allowLocal, false);
     }
 
     /**
@@ -196,13 +211,10 @@ public class EmailValidator implements Serializable {
             return inetAddressValidator.isValid(ipDomainMatcher.group(1));
         }
         // Domain is symbolic name
-        DomainValidator domainValidator =
-                DomainValidator.getInstance(allowLocal);
         if (allowTld) {
             return domainValidator.isValid(domain) || (!domain.startsWith(".") && domainValidator.isValidTld(domain));
-        } else {
-            return domainValidator.isValid(domain);
         }
+        return domainValidator.isValid(domain);
     }
 
     /**
@@ -212,11 +224,11 @@ public class EmailValidator implements Serializable {
      * @return true if the user name is valid.
      */
     protected boolean isValidUser(String user) {
-        
+
         if (user == null || user.length() > MAX_USERNAME_LEN) {
             return false;
         }
-        
+
         return USER_PATTERN.matcher(user).matches();
     }
 

@@ -17,7 +17,7 @@
 package org.apache.commons.validator;
 
 
-/**                                                       
+/**
  * Performs Validation Test for <code>double</code> validations.
  *
  * @version $Revision$
@@ -48,7 +48,7 @@ public class DoubleTest extends AbstractNumberTest {
     public void testDoubleMin() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Double(Double.MIN_VALUE).toString());
+        info.setValue(Double.toString(Double.MIN_VALUE));
 
         valueTest(info, true);
     }
@@ -59,7 +59,7 @@ public class DoubleTest extends AbstractNumberTest {
     public void testDoubleMax() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Double(Double.MAX_VALUE).toString());
+        info.setValue(Double.toString(Double.MAX_VALUE));
 
         valueTest(info, true);
     }
@@ -74,4 +74,4 @@ public class DoubleTest extends AbstractNumberTest {
         valueTest(info, false);
     }
 
-}                                                         
+}

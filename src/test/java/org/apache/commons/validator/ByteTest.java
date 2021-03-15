@@ -18,7 +18,7 @@ package org.apache.commons.validator;
 
 
 
-/**                                                       
+/**
  * Performs Validation Test for <code>byte</code> validations.
  *
  * @version $Revision$
@@ -48,7 +48,7 @@ public class ByteTest extends AbstractNumberTest {
     public void testByteMin() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Byte(Byte.MIN_VALUE).toString());
+        info.setValue(Byte.toString(Byte.MIN_VALUE));
 
         valueTest(info, true);
     }
@@ -59,7 +59,7 @@ public class ByteTest extends AbstractNumberTest {
     public void testByteMax() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Byte(Byte.MAX_VALUE).toString());
+        info.setValue(Byte.toString(Byte.MAX_VALUE));
 
         valueTest(info, true);
     }
@@ -96,4 +96,4 @@ public class ByteTest extends AbstractNumberTest {
         valueTest(info, false);
     }
 
-}                                                         
+}

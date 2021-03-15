@@ -64,13 +64,28 @@ The <action> type attribute can be add,update,fix,remove.
      -->
 
   <body>
-  <release version="1.7" date="TBA" description="
+  <release version="1.8" date="20YY-MM-DD" description="">
+    <action issue="VALIDATOR-477" type="update" dev="sebb">
+    Add IBAN validator for LY – Libya
+    </action>
+    <action type="update" dev="ggregory" due-to="Dependabot">
+    Update actions/checkout from v2.3.1 to v2.3.4, #38, #47.
+    </action>
+    <action type="update" dev="ggregory" due-to="Dependabot">
+    Bump actions/setup-java from v1.4.0 to v1.4.3, #42.
+    </action>
+    <action type="update" dev="ggregory" due-to="Dependabot">
+    Bump junit from 4.13 to 4.13.1 #44.
+    </action>
+  </release>
+  
+  <release version="1.7" date="2020-08-07" description="
 This is primarily a maintenance release.
 
 All projects are encouraged to update to this release of
 Apache Commons Validator.
 
-  Commons Validator requires Java 1.6 or later.
+  Commons Validator requires Java 7 or later.
 
 
  Main enhancements
@@ -78,6 +93,8 @@ Apache Commons Validator.
 
 
  * CreditCard validation specification by numeric range
+ * DomainValidator instances can be created with instance overrides
+ * DomainValidator supports overrides of LOCAL TLDs
 
 
  IMPORTANT NOTES
@@ -86,24 +103,57 @@ Apache Commons Validator.
 
  BREAKING CHANGES:
 
-   * NONE.
+
+ * Now requires Java 7
+ * N.B. Java 9 changed the way Locales are handled. This affects the output from some Date-related methods, and may cause some tests to break.
 
 
  DEPENDENCIES
  ============
 
- *   Updates Apache Commons BeanUtils dependency from 1.9.2 to 1.9.3.
-     This picks up BEANUTILS-482: Update commons-collections from 3.2.1 to 3.2.2 (CVE-2015-4852).
 
-For the current list of dependencies, please see
+ * Updates Apache Commons BeanUtils dependency from 1.9.2 to 1.9.4.
+  This picks up BEANUTILS-482: Update commons-collections from 3.2.1 to 3.2.2 (CVE-2015-4852).
+
+  For the current list of dependencies, please see
 http://commons.apache.org/validator/dependencies.html
   ">
-    <action issue="VALIDATOR-438" type="fix" dev="sebb">
+    <action type="update" dev="sebb">
+    Drop Clirr and Cobertura in favour of JApiCmp and JaCoCo
+    </action>
+    <action issue="VALIDATOR-474" type="add" dev="sebb">
+    DomainValidator should allow local overrides
+    </action>
+    <action issue="VALIDATOR-473" type="add" dev="sebb">
+    Allow Email- and UrlValidator to use specified DomainValidator
+    </action>
+    <action issue="VALIDATOR-403" type="fix" dev="sebb" due-to="Tanya">
+    Accept Discover cards of 17 digits long that start with 6011
+    </action>
+    <action issue="VALIDATOR-408" type="fix" dev="sebb" due-to="Raj Vaida">
+    DISCOVER Card Validation Patterns
+    </action>
+    <action issue="VALIDATOR-472" type="fix" dev="sebb">
+    UrlValidator should not be more lax than java.net.URI
+    </action>
+    <action issue="VALIDATOR-283" type="fix" dev="sebb" due-to="RC Johnson">
+    URLValidator should check for illegal Hex characters
+    </action>
+    <action issue="VALIDATOR-445" type="fix" dev="sebb" due-to="devson">
+    Inet6Address may also contain a scope id
+    </action>
+    <action issue="VALIDATOR-452" type="fix" dev="sebb" due-to="devson">
+    Validation of URL containing IPv4-mapped IPv6 address
+    </action>
+    <action issue="VALIDATOR-471" type="add" dev="sebb">
+    Allow DomainValidator overrides at run-time
+    </action>
+    <action issue="VALIDATOR-438" type="fix" dev="sebb" due-to="Simon Marti">
     IBANValidator fails for El Salvador
     Add definition
     </action>
     <action type="update" dev="sebb">
-    IANA TLD lists: Updated to Version 2018031400, Last Updated Wed Mar 14 07:07:01 2018 UTC
+    IANA TLD lists: Updated to Version 2020073100, Last Updated Fri Jul 31 07:07:01 2020 UTC
     </action>
     <action issue="VALIDATOR-423" type="add" dev="sebb">
     Add ISINValidator
@@ -117,6 +167,40 @@ http://commons.apache.org/validator/dependencies.html
     <action issue="VALIDATOR-437" type="fix" dev="ggregory">
     Update Apache Commons BeanUtils dependency from 1.9.2 to 1.9.3.
     This picks up BEANUTILS-482: Update commons-collections from 3.2.1 to 3.2.2 (CVE-2015-4852).
+    </action>
+    <action issue="VALIDATOR-460" type="fix" dev="ggregory" due-to="Jeff Schram">
+    Update Apache Commons BeanUtils dependency from 1.9.3 to 1.9.4
+    This picks up BEANUTILS-520: Mitigate CVE-2014-0114.
+    </action>
+    <action issue="VALIDATOR-455" type="add" dev="sebb" due-to="Eugen Hanussek">
+    Add IBAN validator for VA – Vatican City State
+    </action>
+    <action issue="VALIDATOR-461" type="fix" dev="sebb" due-to="Nils Reischmann">
+    Generic .gmbh top level domain is considered invalid
+    </action>
+    <action issue="VALIDATOR-444" type="fix" dev="sebb" due-to="Martin Scholz">
+    LongValidator: numbers bigger than the maxvalue are Valid
+    </action>
+    <action issue="VALIDATOR-416" type="fix" dev="sebb">
+    CreditCardValidator default ctor disagrees with Javadoc
+    </action>
+    <action issue="VALIDATOR-446" type="add" dev="sebb" due-to="Alex">
+    ISSN Validator extract ISSN from EAN-13
+    </action>
+    <action issue="VALIDATOR-467" type="fix" dev="sebb" due-to="Ivan Larionov">
+    URL validator fails if path starts with double slash and has underscores
+    </action>
+    <action issue="VALIDATOR-464" type="fix" dev="sebb" due-to="Sebastian Choina">
+    UrlValidator says "file://bad ^ domain.com/label/test" is valid
+    </action>
+    <action issue="VALIDATOR-449" type="fix" dev="sebb" due-to="Frederic Boutin">
+    Leading and trailing spaces in EmailValidator should not be valid
+    </action>
+    <action issue="VALIDATOR-302" type="fix" dev="sebb" due-to="Guido Zockoll">
+    EMailValidator: Addresses with leading spaces must not be accepted
+    </action>
+    <action issue="VALIDATOR-468" type="fix" dev="sebb">
+    DomainValidator.getTLDArray does not synch mutable arrays
     </action>
   </release>
 
@@ -171,7 +255,7 @@ http://commons.apache.org/validator/dependencies.html
     Generic CreditCard validation
     </action>
     <action issue="VALIDATOR-379" type="fix" dev="sebb">
-    CodeValidator unconditionally trim()s the input string - document the behaviour
+    CodeValidator unconditionally trim()s the input string - document the behavior
     </action>
     <action issue="VALIDATOR-387" type="fix" dev="sebb" due-to="Shumpei Akai">
     Userinfo without colon should be valid in UrlValidator

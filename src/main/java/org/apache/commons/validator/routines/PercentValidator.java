@@ -25,7 +25,7 @@ import java.math.BigDecimal;
  *
  * <p>This is one implementation of a percent validator that has the following features:</p>
  *    <ul>
- *       <li>It is <i>lenient</i> about the the presence of the <i>percent symbol</i></li>
+ *       <li>It is <i>lenient</i> about the presence of the <i>percent symbol</i></li>
  *       <li>It converts the percent to a <code>java.math.BigDecimal</code></li>
  *    </ul>
  *
@@ -86,7 +86,7 @@ public class PercentValidator extends BigDecimalValidator {
      *
      * <p>This implementation is lenient whether the currency symbol
      *    is present or not. The default <code>NumberFormat</code>
-     *    behaviour is for the parsing to "fail" if the currency
+     *    behavior is for the parsing to "fail" if the currency
      *    symbol is missing. This method re-parses with a format
      *    without the currency symbol if it fails initially.</p>
      *

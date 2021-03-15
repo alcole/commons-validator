@@ -19,6 +19,7 @@ package org.apache.commons.validator.routines;
 import java.io.Serializable;
 import java.net.IDN;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -63,6 +64,7 @@ import java.util.Locale;
  */
 public class DomainValidator implements Serializable {
 
+    /** Maximum allowable length ({@value}) of a domain name */
     private static final int MAX_DOMAIN_LENGTH = 253;
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
@@ -87,19 +89,30 @@ public class DomainValidator implements Serializable {
     private static final String DOMAIN_NAME_REGEX =
             "^(?:" + DOMAIN_LABEL_REGEX + "\\.)+" + "(" + TOP_LABEL_REGEX + ")\\.?$";
 
+    private static final String UNEXPECTED_ENUM_VALUE = "Unexpected enum value: ";
+
     private final boolean allowLocal;
 
-    /**
-     * Singleton instance of this validator, which
-     *  doesn't consider local addresses as valid.
-     */
-    private static final DomainValidator DOMAIN_VALIDATOR = new DomainValidator(false);
+    private static class LazyHolder { // IODH
+
+        /**
+         * Singleton instance of this validator, which
+         *  doesn't consider local addresses as valid.
+         */
+        private static final DomainValidator DOMAIN_VALIDATOR = new DomainValidator(false);
+
+        /**
+         * Singleton instance of this validator, which does
+         *  consider local addresses valid.
+         */
+        private static final DomainValidator DOMAIN_VALIDATOR_WITH_LOCAL = new DomainValidator(true);
+
+    }
 
     /**
-     * Singleton instance of this validator, which does
-     *  consider local addresses valid.
+     * The above instances must only be returned via the getInstance() methods.
+     * This is to ensure that the override data arrays are properly protected.
      */
-    private static final DomainValidator DOMAIN_VALIDATOR_WITH_LOCAL = new DomainValidator(true);
 
     /**
      * RegexValidator for matching domains.
@@ -120,7 +133,7 @@ public class DomainValidator implements Serializable {
      */
     public static synchronized DomainValidator getInstance() {
         inUse = true;
-        return DOMAIN_VALIDATOR;
+        return LazyHolder.DOMAIN_VALIDATOR;
     }
 
     /**
@@ -132,14 +145,121 @@ public class DomainValidator implements Serializable {
     public static synchronized DomainValidator getInstance(boolean allowLocal) {
         inUse = true;
         if(allowLocal) {
-            return DOMAIN_VALIDATOR_WITH_LOCAL;
+            return LazyHolder.DOMAIN_VALIDATOR_WITH_LOCAL;
         }
-        return DOMAIN_VALIDATOR;
+        return LazyHolder.DOMAIN_VALIDATOR;
     }
 
-    /** Private constructor. */
+    /**
+     * Returns a new instance of this validator.
+     * The user can provide a list of {@link Item} entries which can
+     * be used to override the generic and country code lists.
+     * Note that any such entries override values provided by the
+     * {@link #updateTLDOverride(ArrayType, String[])} method
+     * If an entry for a particular type is not provided, then
+     * the class override (if any) is retained.
+     *
+     * @param allowLocal Should local addresses be considered valid?
+     * @param items - array of {@link Item} entries
+     * @return an instance of this validator
+     * @since 1.7
+     */
+    public static synchronized DomainValidator getInstance(boolean allowLocal, List<Item> items) {
+        inUse = true;
+        return new DomainValidator(allowLocal, items);
+    }
+
+    // intance variables allowing local overrides
+    final String[] mycountryCodeTLDsMinus;
+    final String[] mycountryCodeTLDsPlus;
+    final String[] mygenericTLDsPlus;
+    final String[] mygenericTLDsMinus;
+    final String[] mylocalTLDsPlus;
+    final String[] mylocalTLDsMinus;
+    /*
+     * N.B. It is vital that instances are immutable.
+     * This is because the default instances are shared.
+    */
+
+    // N.B. The constructors are deliberately private to avoid possible problems with unsafe publication.
+    // It is vital that the static override arrays are not mutable once they have been used in an instance
+    // The arrays could be copied into the instance variables, however if the static array were changed it could
+    // result in different settings for the shared default instances
+
+    /**
+     * Private constructor.
+    */
     private DomainValidator(boolean allowLocal) {
         this.allowLocal = allowLocal;
+        // link to class overrides
+        mycountryCodeTLDsMinus = countryCodeTLDsMinus;
+        mycountryCodeTLDsPlus = countryCodeTLDsPlus;
+        mygenericTLDsPlus = genericTLDsPlus;
+        mygenericTLDsMinus = genericTLDsMinus;
+        mylocalTLDsPlus = localTLDsPlus;
+        mylocalTLDsMinus = localTLDsMinus;
+    }
+
+    /**
+     * Private constructor, allowing local overrides
+     * @since 1.7
+    */
+    private DomainValidator(boolean allowLocal,  List<Item> items) {
+        this.allowLocal = allowLocal;
+
+        // default to class overrides
+        String[] ccMinus = countryCodeTLDsMinus;
+        String[] ccPlus = countryCodeTLDsPlus;
+        String[] genMinus = genericTLDsMinus;
+        String[] genPlus = genericTLDsPlus;
+        String[] localMinus = localTLDsMinus;
+        String[] localPlus = localTLDsPlus;
+
+        // apply the instance overrides
+        for(Item item: items) {
+            String [] copy = new String[item.values.length];
+            // Comparisons are always done with lower-case entries
+            for (int i = 0; i < item.values.length; i++) {
+                copy[i] = item.values[i].toLowerCase(Locale.ENGLISH);
+            }
+            Arrays.sort(copy);
+            switch(item.type) {
+            case COUNTRY_CODE_MINUS: {
+                ccMinus = copy;
+                break;
+            }
+            case COUNTRY_CODE_PLUS: {
+                ccPlus = copy;
+                break;
+            }
+            case GENERIC_MINUS: {
+                genMinus = copy;
+                break;
+            }
+            case GENERIC_PLUS: {
+                genPlus = copy;
+                break;
+            }
+            case LOCAL_MINUS: {
+                localMinus = copy;
+                break;
+            }
+            case LOCAL_PLUS: {
+                localPlus = copy;
+                break;
+            }
+            default:
+                break;
+            }
+        }
+
+        // init the instance overrides
+        mycountryCodeTLDsMinus = ccMinus;
+        mycountryCodeTLDsPlus = ccPlus;
+        mygenericTLDsMinus = genMinus;
+        mygenericTLDsPlus = genPlus;
+        mylocalTLDsMinus = localMinus;
+        mylocalTLDsPlus = localPlus;
     }
 
     /**
@@ -154,7 +274,7 @@ public class DomainValidator implements Serializable {
             return false;
         }
         domain = unicodeToASCII(domain);
-        // hosts must be equally reachable via punycode and Unicode;
+        // hosts must be equally reachable via punycode and Unicode
         // Unicode is never shorter than punycode, so check punycode
         // if domain did not convert, then it will be caught by ASCII
         // checks in the regexes below
@@ -175,7 +295,7 @@ public class DomainValidator implements Serializable {
             return false;
         }
         domain = unicodeToASCII(domain);
-        // hosts must be equally reachable via punycode and Unicode;
+        // hosts must be equally reachable via punycode and Unicode
         // Unicode is never shorter than punycode, so check punycode
         // if domain did not convert, then it will be caught by ASCII
         // checks in the regexes below
@@ -191,11 +311,14 @@ public class DomainValidator implements Serializable {
      * Returns true if the specified <code>String</code> matches any
      * IANA-defined top-level domain. Leading dots are ignored if present.
      * The search is case-insensitive.
+     * <p>
+     * If allowLocal is true, the TLD is checked using {@link #isValidLocalTld(String)}.
+     * The TLD is then checked against {@link #isValidInfrastructureTld(String)},
+     * {@link #isValidGenericTld(String)} and {@link #isValidCountryCodeTld(String)}
      * @param tld the parameter to check for TLD status, not null
      * @return true if the parameter is a TLD
      */
     public boolean isValidTld(String tld) {
-        tld = unicodeToASCII(tld);
         if(allowLocal && isValidLocalTld(tld)) {
             return true;
         }
@@ -225,8 +348,8 @@ public class DomainValidator implements Serializable {
      */
     public boolean isValidGenericTld(String gTld) {
         final String key = chompLeadingDot(unicodeToASCII(gTld).toLowerCase(Locale.ENGLISH));
-        return (arrayContains(GENERIC_TLDS, key) || arrayContains(genericTLDsPlus, key))
-                && !arrayContains(genericTLDsMinus, key);
+        return (arrayContains(GENERIC_TLDS, key) || arrayContains(mygenericTLDsPlus, key))
+                && !arrayContains(mygenericTLDsMinus, key);
     }
 
     /**
@@ -238,8 +361,8 @@ public class DomainValidator implements Serializable {
      */
     public boolean isValidCountryCodeTld(String ccTld) {
         final String key = chompLeadingDot(unicodeToASCII(ccTld).toLowerCase(Locale.ENGLISH));
-        return (arrayContains(COUNTRY_CODE_TLDS, key) || arrayContains(countryCodeTLDsPlus, key))
-                && !arrayContains(countryCodeTLDsMinus, key);
+        return (arrayContains(COUNTRY_CODE_TLDS, key) || arrayContains(mycountryCodeTLDsPlus, key))
+                && !arrayContains(mycountryCodeTLDsMinus, key);
     }
 
     /**
@@ -251,7 +374,18 @@ public class DomainValidator implements Serializable {
      */
     public boolean isValidLocalTld(String lTld) {
         final String key = chompLeadingDot(unicodeToASCII(lTld).toLowerCase(Locale.ENGLISH));
-        return arrayContains(LOCAL_TLDS, key);
+        return (arrayContains(LOCAL_TLDS, key) || arrayContains(mylocalTLDsPlus, key))
+                && !arrayContains(mylocalTLDsMinus, key);
+    }
+
+    /**
+     * Does this instance allow local addresses?
+     *
+     * @return true if local addresses are allowed.
+     * @since 1.7
+     */
+    public boolean isAllowLocal() {
+        return this.allowLocal;
     }
 
     private String chompLeadingDot(String str) {
@@ -283,7 +417,7 @@ public class DomainValidator implements Serializable {
 
     // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
     private static final String[] GENERIC_TLDS = new String[] {
-        // Taken from Version 2018031400, Last Updated Wed Mar 14 07:07:01 2018 UTC
+        // Taken from Version 2020073100, Last Updated Fri Jul 31 07:07:01 2020 UTC
         "aaa", // aaa American Automobile Association, Inc.
         "aarp", // aarp AARP
         "abarth", // abarth Fiat Chrysler Automobiles N.V.
@@ -299,7 +433,7 @@ public class DomainValidator implements Serializable {
         "accountant", // accountant dot Accountant Limited
         "accountants", // accountants Knob Town, LLC
         "aco", // aco ACO Severin Ahlmann GmbH &amp; Co. KG
-        "active", // active The Active Network, Inc
+//        "active", // active The Active Network, Inc
         "actor", // actor United TLD Holdco Ltd.
         "adac", // adac Allgemeiner Deutscher Automobil-Club e.V. (ADAC)
         "ads", // ads Charleston Road Registry Inc.
@@ -313,7 +447,7 @@ public class DomainValidator implements Serializable {
         "agakhan", // agakhan Fondation Aga Khan (Aga Khan Foundation)
         "agency", // agency Steel Falls, LLC
         "aig", // aig American International Group, Inc.
-        "aigo", // aigo aigo Digital Technology Co,Ltd.
+//        "aigo", // aigo aigo Digital Technology Co,Ltd. [Not assigned as of Jul 25]
         "airbus", // airbus Airbus S.A.S.
         "airforce", // airforce United TLD Holdco Ltd.
         "airtel", // airtel Bharti Airtel Limited
@@ -326,6 +460,7 @@ public class DomainValidator implements Serializable {
         "ally", // ally Ally Financial Inc.
         "alsace", // alsace REGION D ALSACE
         "alstom", // alstom ALSTOM
+        "amazon", // amazon Amazon Registry Services, Inc.
         "americanexpress", // americanexpress American Express Travel Related Services Company, Inc.
         "americanfamily", // americanfamily AmFam, Inc.
         "amex", // amex American Express Travel Related Services Company, Inc.
@@ -403,14 +538,14 @@ public class DomainValidator implements Serializable {
         "biz", // biz Neustar, Inc.
         "black", // black Afilias Limited
         "blackfriday", // blackfriday Uniregistry, Corp.
-        "blanco", // blanco BLANCO GmbH + Co KG
+//        "blanco", // blanco BLANCO GmbH + Co KG
         "blockbuster", // blockbuster Dish DBS Corporation
         "blog", // blog Knock Knock WHOIS There, LLC
         "bloomberg", // bloomberg Bloomberg IP Holdings LLC
         "blue", // blue Afilias Limited
         "bms", // bms Bristol-Myers Squibb Company
         "bmw", // bmw Bayerische Motoren Werke Aktiengesellschaft
-        "bnl", // bnl Banca Nazionale del Lavoro
+//        "bnl", // bnl Banca Nazionale del Lavoro
         "bnpparibas", // bnpparibas BNP Paribas
         "boats", // boats DERBoats, LLC
         "boehringer", // boehringer Boehringer Ingelheim International GmbH
@@ -420,7 +555,7 @@ public class DomainValidator implements Serializable {
         "boo", // boo Charleston Road Registry Inc.
         "book", // book Amazon Registry Services, Inc.
         "booking", // booking Booking.com B.V.
-        "boots", // boots THE BOOTS COMPANY PLC
+//        "boots", // boots THE BOOTS COMPANY PLC
         "bosch", // bosch Robert Bosch GMBH
         "bostik", // bostik Bostik SA
         "boston", // boston Boston TLD Management, LLC
@@ -461,7 +596,7 @@ public class DomainValidator implements Serializable {
         "career", // career dotCareer LLC
         "careers", // careers Wild Corner, LLC
         "cars", // cars Uniregistry, Corp.
-        "cartier", // cartier Richemont DNS Inc.
+//        "cartier", // cartier Richemont DNS Inc.
         "casa", // casa Top Level Domain Holdings Limited
         "case", // case CNH Industrial N.V.
         "caseih", // caseih CNH Industrial N.V.
@@ -482,6 +617,7 @@ public class DomainValidator implements Serializable {
         "cfd", // cfd DOTCFD REGISTRY LTD
         "chanel", // chanel Chanel International B.V.
         "channel", // channel Charleston Road Registry Inc.
+        "charity", // charity Corn Lake, LLC
         "chase", // chase JPMorgan Chase &amp; Co.
         "chat", // chat Sand Fields, LLC
         "cheap", // cheap Sand Cover, LLC
@@ -489,7 +625,7 @@ public class DomainValidator implements Serializable {
 //        "chloe", // chloe Richemont DNS Inc. (Not assigned)
         "christmas", // christmas Uniregistry, Corp.
         "chrome", // chrome Charleston Road Registry Inc.
-        "chrysler", // chrysler FCA US LLC.
+//        "chrysler", // chrysler FCA US LLC.
         "church", // church Holly Fileds, LLC
         "cipriani", // cipriani Hotel Cipriani Srl
         "circle", // circle Amazon Registry Services, Inc.
@@ -535,6 +671,7 @@ public class DomainValidator implements Serializable {
         "coupon", // coupon Amazon Registry Services, Inc.
         "coupons", // coupons Black Island, LLC
         "courses", // courses OPEN UNIVERSITIES AUSTRALIA PTY LTD
+        "cpa", // cpa American Institute of Certified Public Accountants
         "credit", // credit Snow Shadow, LLC
         "creditcard", // creditcard Binky Frostbite, LLC
         "creditunion", // creditunion CUNA Performance Resources, LLC
@@ -584,9 +721,9 @@ public class DomainValidator implements Serializable {
         "dnp", // dnp Dai Nippon Printing Co., Ltd.
         "docs", // docs Charleston Road Registry Inc.
         "doctor", // doctor Brice Trail, LLC
-        "dodge", // dodge FCA US LLC.
+//        "dodge", // dodge FCA US LLC.
         "dog", // dog Koko Mill, LLC
-        "doha", // doha Communications Regulatory Authority (CRA)
+//        "doha", // doha Communications Regulatory Authority (CRA)
         "domains", // domains Sugar Cross, LLC
 //            "doosan", // doosan Doosan Corporation (retired)
         "dot", // dot Dish DBS Corporation
@@ -596,7 +733,7 @@ public class DomainValidator implements Serializable {
         "dubai", // dubai Dubai Smart Government Department
         "duck", // duck Johnson Shareholdings, Inc.
         "dunlop", // dunlop The Goodyear Tire &amp; Rubber Company
-        "duns", // duns The Dun &amp; Bradstreet Corporation
+//        "duns", // duns The Dun &amp; Bradstreet Corporation
         "dupont", // dupont E. I. du Pont de Nemours and Company
         "durban", // durban ZA Central Registry NPC trading as ZA Central Registry
         "dvag", // dvag Deutsche Vermögensberatung Aktiengesellschaft DVAG
@@ -613,19 +750,19 @@ public class DomainValidator implements Serializable {
         "engineer", // engineer United TLD Holdco Ltd.
         "engineering", // engineering Romeo Canyon
         "enterprises", // enterprises Snow Oaks, LLC
-        "epost", // epost Deutsche Post AG
+//        "epost", // epost Deutsche Post AG
         "epson", // epson Seiko Epson Corporation
         "equipment", // equipment Corn Station, LLC
         "ericsson", // ericsson Telefonaktiebolaget L M Ericsson
         "erni", // erni ERNI Group Holding AG
         "esq", // esq Charleston Road Registry Inc.
         "estate", // estate Trixy Park, LLC
-        "esurance", // esurance Esurance Insurance Company
+        // "esurance", // esurance Esurance Insurance Company (not assigned as at Version 2020062100)
         "etisalat", // etisalat Emirates Telecommunic
         "eurovision", // eurovision European Broadcasting Union (EBU)
         "eus", // eus Puntueus Fundazioa
         "events", // events Pioneer Maple, LLC
-        "everbank", // everbank EverBank
+//        "everbank", // everbank EverBank
         "exchange", // exchange Spring Falls, LLC
         "expert", // expert Magic Pass, LLC
         "exposed", // exposed Victor Beach, LLC
@@ -699,6 +836,7 @@ public class DomainValidator implements Serializable {
         "games", // games United TLD Holdco Ltd.
         "gap", // gap The Gap, Inc.
         "garden", // garden Top Level Domain Holdings Limited
+        "gay", // gay Top Level Design, LLC
         "gbiz", // gbiz Charleston Road Registry Inc.
         "gdn", // gdn Joint Stock Company "Navigation-information systems"
         "gea", // gea GEA Group Aktiengesellschaft
@@ -724,7 +862,7 @@ public class DomainValidator implements Serializable {
         "goldpoint", // goldpoint YODOBASHI CAMERA CO.,LTD.
         "golf", // golf Lone Falls, LLC
         "goo", // goo NTT Resonant Inc.
-        "goodhands", // goodhands Allstate Fire and Casualty Insurance Company
+//        "goodhands", // goodhands Allstate Fire and Casualty Insurance Company
         "goodyear", // goodyear The Goodyear Tire &amp; Rubber Company
         "goog", // goog Charleston Road Registry Inc.
         "google", // google Charleston Road Registry Inc.
@@ -771,7 +909,7 @@ public class DomainValidator implements Serializable {
         "homes", // homes DERHomes, LLC
         "homesense", // homesense The TJX Companies, Inc.
         "honda", // honda Honda Motor Co., Ltd.
-        "honeywell", // honeywell Honeywell GTLD LLC
+//        "honeywell", // honeywell Honeywell GTLD LLC
         "horse", // horse Top Level Domain Holdings Limited
         "hospital", // hospital Ruby Pike, LLC
         "host", // host DotHost Inc.
@@ -799,6 +937,7 @@ public class DomainValidator implements Serializable {
         "imdb", // imdb Amazon Registry Services, Inc.
         "immo", // immo Auburn Bloom, LLC
         "immobilien", // immobilien United TLD Holdco Ltd.
+        "inc", // inc Intercap Holdings Inc.
         "industries", // industries Outer House, LLC
         "infiniti", // infiniti NISSAN MOTOR CO., LTD.
         "info", // info Afilias Limited
@@ -814,14 +953,14 @@ public class DomainValidator implements Serializable {
         "investments", // investments Holly Glen, LLC
         "ipiranga", // ipiranga Ipiranga Produtos de Petroleo S.A.
         "irish", // irish Dot-Irish LLC
-        "iselect", // iselect iSelect Ltd
+//        "iselect", // iselect iSelect Ltd
         "ismaili", // ismaili Fondation Aga Khan (Aga Khan Foundation)
         "ist", // ist Istanbul Metropolitan Municipality
         "istanbul", // istanbul Istanbul Metropolitan Municipality / Medya A.S.
         "itau", // itau Itau Unibanco Holding S.A.
         "itv", // itv ITV Services Limited
         "iveco", // iveco CNH Industrial N.V.
-        "iwc", // iwc Richemont DNS Inc.
+//        "iwc", // iwc Richemont DNS Inc.
         "jaguar", // jaguar Jaguar Land Rover Ltd
         "java", // java Oracle Corporation
         "jcb", // jcb JCB Co., Ltd.
@@ -830,7 +969,7 @@ public class DomainValidator implements Serializable {
         "jetzt", // jetzt New TLD Company AB
         "jewelry", // jewelry Wild Bloom, LLC
         "jio", // jio Affinity Names, Inc.
-        "jlc", // jlc Richemont DNS Inc.
+//        "jlc", // jlc Richemont DNS Inc.
         "jll", // jll Jones Lang LaSalle Incorporated
         "jmp", // jmp Matrix IP LLC
         "jnj", // jnj Johnson &amp; Johnson Services, Inc.
@@ -864,12 +1003,12 @@ public class DomainValidator implements Serializable {
         "kuokgroup", // kuokgroup Kerry Trading Co. Limited
         "kyoto", // kyoto Academic Institution: Kyoto Jyoho Gakuen
         "lacaixa", // lacaixa CAIXA D&#39;ESTALVIS I PENSIONS DE BARCELONA
-        "ladbrokes", // ladbrokes LADBROKES INTERNATIONAL PLC
+//        "ladbrokes", // ladbrokes LADBROKES INTERNATIONAL PLC
         "lamborghini", // lamborghini Automobili Lamborghini S.p.A.
         "lamer", // lamer The Estée Lauder Companies Inc.
         "lancaster", // lancaster LANCASTER
         "lancia", // lancia Fiat Chrysler Automobiles N.V.
-        "lancome", // lancome L&#39;Oréal
+//        "lancome", // lancome L&#39;Oréal
         "land", // land Pine Moon, LLC
         "landrover", // landrover Jaguar Land Rover Ltd
         "lanxess", // lanxess LANXESS Corporation
@@ -887,7 +1026,7 @@ public class DomainValidator implements Serializable {
         "lego", // lego LEGO Juris A/S
         "lexus", // lexus TOYOTA MOTOR CORPORATION
         "lgbt", // lgbt Afilias Limited
-        "liaison", // liaison Liaison Technologies, Incorporated
+//        "liaison", // liaison Liaison Technologies, Incorporated
         "lidl", // lidl Schwarz Domains und Services GmbH &amp; Co. KG
         "life", // life Trixy Oaks, LLC
         "lifeinsurance", // lifeinsurance American Council of Life Insurers
@@ -904,6 +1043,8 @@ public class DomainValidator implements Serializable {
         "live", // live United TLD Holdco Ltd.
         "living", // living Lifestyle Domain Holdings, Inc.
         "lixil", // lixil LIXIL Group Corporation
+        "llc", // llc Afilias plc
+        "llp", // llp Dot Registry LLC
         "loan", // loan dot Loan Limited
         "loans", // loans June Woods, LLC
         "locker", // locker Dish DBS Corporation
@@ -950,7 +1091,7 @@ public class DomainValidator implements Serializable {
         "memorial", // memorial Dog Beach, LLC
         "men", // men Exclusive Registry Limited
         "menu", // menu Wedding TLD2, LLC
-        "meo", // meo PT Comunicacoes S.A.
+//        "meo", // meo PT Comunicacoes S.A.
         "merckmsd", // merckmsd MSD Registry Holdings, Inc.
         "metlife", // metlife MetLife Services and Solutions, LLC
         "miami", // miami Top Level Domain Holdings Limited
@@ -965,7 +1106,7 @@ public class DomainValidator implements Serializable {
         "mma", // mma MMA IARD
         "mobi", // mobi Afilias Technologies Limited dba dotMobi
         "mobile", // mobile Dish DBS Corporation
-        "mobily", // mobily GreenTech Consultancy Company W.L.L.
+//        "mobily", // mobily GreenTech Consultancy Company W.L.L.
         "moda", // moda United TLD Holdco Ltd.
         "moe", // moe Interlink Co., Ltd.
         "moi", // moi Amazon Registry Services, Inc.
@@ -974,7 +1115,7 @@ public class DomainValidator implements Serializable {
         "money", // money Outer McCook, LLC
         "monster", // monster Monster Worldwide, Inc.
 //        "montblanc", // montblanc Richemont DNS Inc. (Not assigned)
-        "mopar", // mopar FCA US LLC.
+//        "mopar", // mopar FCA US LLC.
         "mormon", // mormon IRI Domain Management, LLC (&quot;Applicant&quot;)
         "mortgage", // mortgage United TLD Holdco, Ltd
         "moscow", // moscow Foundation for Assistance for Internet Technologies and Infrastructure Development (FAITID)
@@ -982,7 +1123,7 @@ public class DomainValidator implements Serializable {
         "motorcycles", // motorcycles DERMotorcycles, LLC
         "mov", // mov Charleston Road Registry Inc.
         "movie", // movie New Frostbite, LLC
-        "movistar", // movistar Telefónica S.A.
+//        "movistar", // movistar Telefónica S.A.
         "msd", // msd MSD Registry Holdings, Inc.
         "mtn", // mtn MTN Dubai Limited
 //        "mtpc", // mtpc Mitsubishi Tanabe Pharma Corporation (Retired)
@@ -991,7 +1132,7 @@ public class DomainValidator implements Serializable {
         "mutual", // mutual Northwestern Mutual MU TLD Registry, LLC
 //        "mutuelle", // mutuelle Fédération Nationale de la Mutualité Française (Retired)
         "nab", // nab National Australia Bank Limited
-        "nadex", // nadex Nadex Domains, Inc
+//        "nadex", // nadex Nadex Domains, Inc
         "nagoya", // nagoya GMO Registry, Inc.
         "name", // name VeriSign Information Services, Inc.
         "nationwide", // nationwide Nationwide Mutual Insurance Company
@@ -1059,7 +1200,7 @@ public class DomainValidator implements Serializable {
         "page", // page Charleston Road Registry Inc.
 //        "pamperedchef", // pamperedchef The Pampered Chef, Ltd. (Not assigned)
         "panasonic", // panasonic Panasonic Corporation
-        "panerai", // panerai Richemont DNS Inc.
+//        "panerai", // panerai Richemont DNS Inc.
         "paris", // paris City of Paris
         "pars", // pars Asia Green IT System Bilgisayar San. ve Tic. Ltd. Sti.
         "partners", // partners Magic Glen, LLC
@@ -1078,7 +1219,7 @@ public class DomainValidator implements Serializable {
         "photography", // photography Sugar Glen, LLC
         "photos", // photos Sea Corner, LLC
         "physio", // physio PhysBiz Pty Ltd
-        "piaget", // piaget Richemont DNS Inc.
+//        "piaget", // piaget Richemont DNS Inc.
         "pics", // pics Uniregistry, Corp.
         "pictet", // pictet Pictet Europe S.A.
         "pictures", // pictures Foggy Sky, LLC
@@ -1150,7 +1291,7 @@ public class DomainValidator implements Serializable {
         "rich", // rich I-REGISTRY Ltd., Niederlassung Deutschland
         "richardli", // richardli Pacific Century Asset Management (HK) Limited
         "ricoh", // ricoh Ricoh Company, Ltd.
-        "rightathome", // rightathome Johnson Shareholdings, Inc.
+        // "rightathome", // rightathome Johnson Shareholdings, Inc. (retired 2020-07-31)
         "ril", // ril Reliance Industries Limited
         "rio", // rio Empresa Municipal de Informática SA - IPLANRIO
         "rip", // rip United TLD Holdco Ltd.
@@ -1178,7 +1319,7 @@ public class DomainValidator implements Serializable {
         "sandvikcoromant", // sandvikcoromant Sandvik AB
         "sanofi", // sanofi Sanofi
         "sap", // sap SAP AG
-        "sapo", // sapo PT Comunicacoes S.A.
+//        "sapo", // sapo PT Comunicacoes S.A.
         "sarl", // sarl Delta Orchard, LLC
         "sas", // sas Research IP LLC
         "save", // save Amazon Registry Services, Inc.
@@ -1195,7 +1336,7 @@ public class DomainValidator implements Serializable {
         "schwarz", // schwarz Schwarz Domains und Services GmbH &amp; Co. KG
         "science", // science dot Science Limited
         "scjohnson", // scjohnson Johnson Shareholdings, Inc.
-        "scor", // scor SCOR SE
+        // "scor", // scor SCOR SE (not assigned as at Version 2020062100)
         "scot", // scot Dot Scot Registry Limited
         "search", // search Charleston Road Registry Inc.
         "seat", // seat SEAT, S.A. (Sociedad Unipersonal)
@@ -1247,19 +1388,19 @@ public class DomainValidator implements Serializable {
         "sony", // sony Sony Corporation
         "soy", // soy Charleston Road Registry Inc.
         "space", // space DotSpace Inc.
-        "spiegel", // spiegel SPIEGEL-Verlag Rudolf Augstein GmbH &amp; Co. KG
+//        "spiegel", // spiegel SPIEGEL-Verlag Rudolf Augstein GmbH &amp; Co. KG
         "sport", // sport Global Association of International Sports Federations (GAISF)
         "spot", // spot Amazon Registry Services, Inc.
         "spreadbetting", // spreadbetting DOTSPREADBETTING REGISTRY LTD
         "srl", // srl InterNetX Corp.
-        "srt", // srt FCA US LLC.
+//        "srt", // srt FCA US LLC.
         "stada", // stada STADA Arzneimittel AG
         "staples", // staples Staples, Inc.
         "star", // star Star India Private Limited
-        "starhub", // starhub StarHub Limited
+//        "starhub", // starhub StarHub Limited
         "statebank", // statebank STATE BANK OF INDIA
         "statefarm", // statefarm State Farm Mutual Automobile Insurance Company
-        "statoil", // statoil Statoil ASA
+//        "statoil", // statoil Statoil ASA
         "stc", // stc Saudi Telecom Company
         "stcgroup", // stcgroup Saudi Telecom Company
         "stockholm", // stockholm Stockholms kommun
@@ -1280,7 +1421,7 @@ public class DomainValidator implements Serializable {
         "swiftcover", // swiftcover Swiftcover Insurance Services Limited
         "swiss", // swiss Swiss Confederation
         "sydney", // sydney State of New South Wales, Department of Premier and Cabinet
-        "symantec", // symantec Symantec Corporation
+//        "symantec", // symantec Symantec Corporation [Not assigned as of Jul 25]
         "systems", // systems Dash Cypress, LLC
         "tab", // tab Tabcorp Holdings Limited
         "taipei", // taipei Taipei City Government
@@ -1288,7 +1429,7 @@ public class DomainValidator implements Serializable {
         "taobao", // taobao Alibaba Group Holding Limited
         "target", // target Target Domain Holdings, LLC
         "tatamotors", // tatamotors Tata Motors Ltd
-        "tatar", // tatar Limited Liability Company &quot;Coordination Center of Regional Domain of Tatarstan Republic&quot;
+        "tatar", // tatar LLC "Coordination Center of Regional Domain of Tatarstan Republic"
         "tattoo", // tattoo Uniregistry, Corp.
         "tax", // tax Storm Orchard, LLC
         "taxi", // taxi Pine Falls, LLC
@@ -1298,8 +1439,8 @@ public class DomainValidator implements Serializable {
         "tech", // tech Dot Tech LLC
         "technology", // technology Auburn Falls, LLC
         "tel", // tel Telnic Ltd.
-        "telecity", // telecity TelecityGroup International Limited
-        "telefonica", // telefonica Telefónica S.A.
+//        "telecity", // telecity TelecityGroup International Limited
+//        "telefonica", // telefonica Telefónica S.A.
         "temasek", // temasek Temasek Holdings (Private) Limited
         "tennis", // tennis Cotton Bloom, LLC
         "teva", // teva Teva Pharmaceutical Industries Limited
@@ -1344,7 +1485,7 @@ public class DomainValidator implements Serializable {
         "tvs", // tvs T V SUNDRAM IYENGAR  &amp; SONS PRIVATE LIMITED
         "ubank", // ubank National Australia Bank Limited
         "ubs", // ubs UBS AG
-        "uconnect", // uconnect FCA US LLC.
+//        "uconnect", // uconnect FCA US LLC.
         "unicom", // unicom China United Network Communications Corporation Limited
         "university", // university Little Station, LLC
         "uno", // uno Dot Latin LLC
@@ -1368,8 +1509,8 @@ public class DomainValidator implements Serializable {
         "virgin", // virgin Virgin Enterprises Limited
         "visa", // visa Visa Worldwide Pte. Limited
         "vision", // vision Koko Station, LLC
-        "vista", // vista Vistaprint Limited
-        "vistaprint", // vistaprint Vistaprint Limited
+//        "vista", // vista Vistaprint Limited
+//        "vistaprint", // vistaprint Vistaprint Limited
         "viva", // viva Saudi Telecom Company
         "vivo", // vivo Telefonica Brasil S.A.
         "vlaanderen", // vlaanderen DNS.be vzw
@@ -1386,7 +1527,7 @@ public class DomainValidator implements Serializable {
         "walter", // walter Sandvik AB
         "wang", // wang Zodiac Registry Limited
         "wanggou", // wanggou Amazon Registry Services, Inc.
-        "warman", // warman Weir Group IP Limited
+//        "warman", // warman Weir Group IP Limited
         "watch", // watch Sand Shadow, LLC
         "watches", // watches Richemont DNS Inc.
         "weather", // weather The Weather Channel, LLC
@@ -1451,6 +1592,7 @@ public class DomainValidator implements Serializable {
         "xn--c1avg", // орг Public Interest Registry
         "xn--c2br7g", // नेट VeriSign Sarl
         "xn--cck2b3b", // ストア Amazon Registry Services, Inc.
+        "xn--cckwcxetd", // アマゾン Amazon Registry Services, Inc.
         "xn--cg4bki", // 삼성 SAMSUNG SDS CO., LTD
         "xn--czr694b", // 商标 HU YI GLOBAL INFORMATION RESOURCES(HOLDING) COMPANY.HONGKONG LIMITED
         "xn--czrs0t", // 商店 Wild Island, LLC
@@ -1458,7 +1600,7 @@ public class DomainValidator implements Serializable {
         "xn--d1acj3b", // дети The Foundation for Network Initiatives “The Smart Internet”
         "xn--eckvdtc9d", // ポイント Amazon Registry Services, Inc.
         "xn--efvy88h", // 新闻 Xinhua News Agency Guangdong Branch 新华通讯社广东分社
-        "xn--estv75g", // 工行 Industrial and Commercial Bank of China Limited
+//        "xn--estv75g", // 工行 Industrial and Commercial Bank of China Limited
         "xn--fct429k", // 家電 Amazon Registry Services, Inc.
         "xn--fhbei", // كوم VeriSign Sarl
         "xn--fiq228c5hs", // 中文网 TLD REGISTRY LIMITED
@@ -1474,16 +1616,17 @@ public class DomainValidator implements Serializable {
         "xn--imr513n", // 餐厅 HU YI GLOBAL INFORMATION RESOURCES (HOLDING) COMPANY. HONGKONG LIMITED
         "xn--io0a7i", // 网络 Computer Network Information Center of Chinese Academy of Sciences （China Internet Network Information Center）
         "xn--j1aef", // ком VeriSign Sarl
+        "xn--jlq480n2rg", // 亚马逊 Amazon Registry Services, Inc.
         "xn--jlq61u9w7b", // 诺基亚 Nokia Corporation
         "xn--jvr189m", // 食品 Amazon Registry Services, Inc.
         "xn--kcrx77d1x4a", // 飞利浦 Koninklijke Philips N.V.
-        "xn--kpu716f", // 手表 Richemont DNS Inc.
+//        "xn--kpu716f", // 手表 Richemont DNS Inc. [Not assigned as of Jul 25]
         "xn--kput3i", // 手机 Beijing RITT-Net Technology Development Co., Ltd
         "xn--mgba3a3ejt", // ارامكو Aramco Services Company
         "xn--mgba7c0bbn0a", // العليان Crescent Holding GmbH
         "xn--mgbaakc7dvf", // اتصالات Emirates Telecommunications Corporation (trading as Etisalat)
         "xn--mgbab2bd", // بازار CORE Association
-        "xn--mgbb9fbpob", // موبايلي GreenTech Consultancy Company W.L.L.
+//        "xn--mgbb9fbpob", // موبايلي GreenTech Consultancy Company W.L.L.
         "xn--mgbca7dzdo", // ابوظبي Abu Dhabi Systems and Information Centre
         "xn--mgbi4ecexp", // كاثوليك Pontificium Consilium de Comunicationibus Socialibus (PCCS) (Pontifical Council for Social Communication)
         "xn--mgbt3dhd", // همراه Asia Green IT System Bilgisayar San. ve Tic. Ltd. Sti.
@@ -1497,7 +1640,7 @@ public class DomainValidator implements Serializable {
         "xn--nyqy26a", // 健康 Stable Tone Limited
         "xn--otu796d", // 招聘 Dot Trademark TLD Holding Company Limited
         "xn--p1acf", // рус Rusnames Limited
-        "xn--pbt977c", // 珠宝 Richemont DNS Inc.
+//        "xn--pbt977c", // 珠宝 Richemont DNS Inc. [Not assigned as of Jul 25]
         "xn--pssy2u", // 大拿 VeriSign Sarl
         "xn--q9jyb4c", // みんな Charleston Road Registry Inc.
         "xn--qcka1pmc", // グーグル Charleston Road Registry Inc.
@@ -1516,7 +1659,7 @@ public class DomainValidator implements Serializable {
         "xn--w4rs40l", // 嘉里 Kerry Trading Co. Limited
         "xn--xhq521b", // 广东 Guangzhou YU Wei Information Technology Co., Ltd.
         "xn--zfr164b", // 政务 China Organizational Name Administration Center
-        "xperia", // xperia Sony Mobile Communications AB
+//        "xperia", // xperia Sony Mobile Communications AB
         "xxx", // xxx ICM Registry LLC
         "xyz", // xyz XYZ.COM LLC
         "yachts", // yachts DERYachts, LLC
@@ -1533,14 +1676,14 @@ public class DomainValidator implements Serializable {
         "zara", // zara Industria de Diseño Textil, S.A. (INDITEX, S.A.)
         "zero", // zero Amazon Registry Services, Inc.
         "zip", // zip Charleston Road Registry Inc.
-        "zippo", // zippo Zadco Company
+//        "zippo", // zippo Zadco Company
         "zone", // zone Outer Falls, LLC
         "zuerich", // zuerich Kanton Zürich (Canton of Zurich)
 };
 
     // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
     private static final String[] COUNTRY_CODE_TLDS = new String[] {
-         // Taken from Version 2018031400, Last Updated Wed Mar 14 07:07:01 2018 UTC
+        // Taken from Version 2020051000, Last Updated Sun May 10 07:07:01 2020 UTC
         "ac",                 // Ascension Island
         "ad",                 // Andorra
         "ae",                 // United Arab Emirates
@@ -1747,6 +1890,7 @@ public class DomainValidator implements Serializable {
         "sn",                 // Senegal
         "so",                 // Somalia
         "sr",                 // Suriname
+        "ss",                 // ss National Communication Authority (NCA)
         "st",                 // São Tomé and Príncipe
         "su",                 // Soviet Union (deprecated)
         "sv",                 // El Salvador
@@ -1814,11 +1958,13 @@ public class DomainValidator implements Serializable {
         "xn--mgb9awbf", // عمان Telecommunications Regulatory Authority (TRA)
         "xn--mgba3a4f16a", // ایران Institute for Research in Fundamental Sciences (IPM)
         "xn--mgbaam7a8h", // امارات Telecommunications Regulatory Authority (TRA)
+        "xn--mgbah1a3hjkrd", // موريتانيا Université de Nouakchott Al Aasriya
         "xn--mgbai9azgqp6j", // پاکستان National Telecommunication Corporation
         "xn--mgbayh7gpa", // الاردن National Information Technology Center (NITC)
         "xn--mgbbh1a", // بارت National Internet eXchange of India
         "xn--mgbbh1a71e", // بھارت National Internet Exchange of India
         "xn--mgbc0a9azcg", // المغرب Agence Nationale de Réglementation des Télécommunications (ANRT)
+        "xn--mgbcpq6gpa1a", // البحرين Telecommunications Regulatory Authority (TRA)
         "xn--mgberp4a5d4ar", // السعودية Communications and Information Technology Commission
         "xn--mgbgu82a", // ڀارت National Internet eXchange of India
         "xn--mgbpl2fh", // ????? Sudan Internet Society
@@ -1830,6 +1976,8 @@ public class DomainValidator implements Serializable {
         "xn--ogbpf8fl", // سورية National Agency for Network Services (NANS)
         "xn--p1ai", // рф Coordination Center for TLD RU
         "xn--pgbs0dh", // تونس Agence Tunisienne d&#39;Internet
+        "xn--q7ce6a", // ລາວ Lao National Internet Center (LANIC)
+        "xn--qxa6a", // ευ EURid vzw/asbl
         "xn--qxam", // ελ ICS-FORTH GR
         "xn--rvc1e0am3e", // ഭാരതം National Internet eXchange of India
         "xn--s9brj9c", // ਭਾਰਤ National Internet Exchange of India
@@ -1860,26 +2008,33 @@ public class DomainValidator implements Serializable {
      * This field is used to detect whether the getInstance has been called.
      * After this, the method updateTLDOverride is not allowed to be called.
      * This field does not need to be volatile since it is only accessed from
-     * synchronized methods. 
+     * synchronized methods.
      */
     private static boolean inUse = false;
 
     /*
-     * These arrays are mutable, but they don't need to be volatile.
-     * They can only be updated by the updateTLDOverride method, and any readers must get an instance
+     * These arrays are mutable.
+     * They can only be updated by the updateTLDOverride method, and readers must first get an instance
      * using the getInstance methods which are all (now) synchronised.
+     * The only other access is via getTLDEntries which is now synchronised.
      */
     // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
-    private static volatile String[] countryCodeTLDsPlus = EMPTY_STRING_ARRAY;
+    private static String[] countryCodeTLDsPlus = EMPTY_STRING_ARRAY;
 
     // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
-    private static volatile String[] genericTLDsPlus = EMPTY_STRING_ARRAY;
+    private static String[] genericTLDsPlus = EMPTY_STRING_ARRAY;
 
     // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
-    private static volatile String[] countryCodeTLDsMinus = EMPTY_STRING_ARRAY;
+    private static String[] countryCodeTLDsMinus = EMPTY_STRING_ARRAY;
 
     // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
-    private static volatile String[] genericTLDsMinus = EMPTY_STRING_ARRAY;
+    private static String[] genericTLDsMinus = EMPTY_STRING_ARRAY;
+
+    // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
+    private static String[] localTLDsMinus = EMPTY_STRING_ARRAY;
+
+    // WARNING: this array MUST be sorted, otherwise it cannot be searched reliably using binary search
+    private static String[] localTLDsPlus = EMPTY_STRING_ARRAY;
 
     /**
      * enum used by {@link DomainValidator#updateTLDOverride(ArrayType, String[])}
@@ -1903,18 +2058,38 @@ public class DomainValidator implements Serializable {
         /** Get a copy of the infrastructure table */
         INFRASTRUCTURE_RO,
         /** Get a copy of the local table */
-        LOCAL_RO
+        LOCAL_RO,
+        /**
+         * Update (or get a copy of) the LOCAL_TLDS_PLUS table containing additional local TLDs
+         * @since 1.7
+         */
+        LOCAL_PLUS,
+        /**
+         * Update (or get a copy of) the LOCAL_TLDS_MINUS table containing deleted local TLDs
+         * @since 1.7
+         */
+        LOCAL_MINUS
         ;
-    };
-
-    // For use by unit test code only
-    static synchronized void clearTLDOverrides() {
-        inUse = false;
-        countryCodeTLDsPlus = EMPTY_STRING_ARRAY;
-        countryCodeTLDsMinus = EMPTY_STRING_ARRAY;
-        genericTLDsPlus = EMPTY_STRING_ARRAY;
-        genericTLDsMinus = EMPTY_STRING_ARRAY;
     }
+
+    /**
+     * Used to specify overrides when creating a new class.
+     * @since 1.7
+     */
+    public static class Item {
+        final ArrayType type;
+        final String[] values;
+        /**
+         *
+         * @param type ArrayType, e.g. GENERIC_PLUS, LOCAL_PLUS
+         * @param values array of TLDs. Will be lower-cased and sorted
+         */
+        public Item(ArrayType type, String[] values) {
+            this.type = type;
+            this.values = values; // no need to copy here
+        }
+    }
+
     /**
      * Update one of the TLD override arrays.
      * This must only be done at program startup, before any instances are accessed using getInstance.
@@ -1932,6 +2107,8 @@ public class DomainValidator implements Serializable {
      * <li>COUNTRY_CODE_PLUS</li>
      * <li>GENERIC_MINUS</li>
      * <li>GENERIC_PLUS</li>
+     * <li>LOCAL_MINUS</li>
+     * <li>LOCAL_PLUS</li>
      * </ul>
      * @param tlds the array of TLDs, must not be null
      * @throws IllegalStateException if the method is called after getInstance
@@ -1961,25 +2138,31 @@ public class DomainValidator implements Serializable {
         case GENERIC_PLUS:
             genericTLDsPlus = copy;
             break;
+        case LOCAL_MINUS:
+            localTLDsMinus = copy;
+            break;
+        case LOCAL_PLUS:
+            localTLDsPlus = copy;
+            break;
         case COUNTRY_CODE_RO:
         case GENERIC_RO:
         case INFRASTRUCTURE_RO:
         case LOCAL_RO:
             throw new IllegalArgumentException("Cannot update the table: " + table);
         default:
-            throw new IllegalArgumentException("Unexpected enum value: " + table);
+            throw new IllegalArgumentException(UNEXPECTED_ENUM_VALUE + table);
         }
     }
 
     /**
-     * Get a copy of the internal array.
+     * Get a copy of a class level internal array.
      * @param table the array type (any of the enum values)
      * @return a copy of the array
      * @throws IllegalArgumentException if the table type is unexpected (should not happen)
      * @since 1.5.1
      */
-    public static String [] getTLDEntries(ArrayType table) {
-        final String array[];
+    public static synchronized String [] getTLDEntries(ArrayType table) {
+        final String[] array;
         switch(table) {
         case COUNTRY_CODE_MINUS:
             array = countryCodeTLDsMinus;
@@ -1992,6 +2175,12 @@ public class DomainValidator implements Serializable {
             break;
         case GENERIC_PLUS:
             array = genericTLDsPlus;
+            break;
+        case LOCAL_MINUS:
+            array = localTLDsMinus;
+            break;
+        case LOCAL_PLUS:
+            array = localTLDsPlus;
             break;
         case GENERIC_RO:
             array = GENERIC_TLDS;
@@ -2006,15 +2195,48 @@ public class DomainValidator implements Serializable {
             array = LOCAL_TLDS;
             break;
         default:
-            throw new IllegalArgumentException("Unexpected enum value: " + table);
+            throw new IllegalArgumentException(UNEXPECTED_ENUM_VALUE + table);
         }
         return Arrays.copyOf(array, array.length); // clone the array
     }
 
     /**
+     * Get a copy of an instance level internal array.
+     * @param table the array type (any of the enum values)
+     * @return a copy of the array
+     * @throws IllegalArgumentException if the table type is unexpected, e.g. GENERIC_RO
+     * @since 1.7
+     */
+    public String [] getOverrides(ArrayType table) {
+        final String[] array;
+        switch(table) {
+        case COUNTRY_CODE_MINUS:
+            array = mycountryCodeTLDsMinus;
+            break;
+        case COUNTRY_CODE_PLUS:
+            array = mycountryCodeTLDsPlus;
+            break;
+        case GENERIC_MINUS:
+            array = mygenericTLDsMinus;
+            break;
+        case GENERIC_PLUS:
+            array = mygenericTLDsPlus;
+            break;
+        case LOCAL_MINUS:
+            array = mylocalTLDsMinus;
+            break;
+        case LOCAL_PLUS:
+            array = mylocalTLDsPlus;
+            break;
+        default:
+            throw new IllegalArgumentException(UNEXPECTED_ENUM_VALUE + table);
+        }
+        return Arrays.copyOf(array, array.length); // clone the array
+    }
+    /**
      * Converts potentially Unicode input to punycode.
      * If conversion fails, returns the original input.
-     * 
+     *
      * @param input the string to convert, not null
      * @return converted input, or original input if conversion fails
      */

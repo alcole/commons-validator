@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 
@@ -117,7 +116,6 @@ public class ValidatorResources implements Serializable {
      * Create an empty ValidatorResources object.
      */
     public ValidatorResources() {
-        super();
     }
 
     /**
@@ -153,8 +151,6 @@ public class ValidatorResources implements Serializable {
      */
     public ValidatorResources(InputStream[] streams)
             throws IOException, SAXException {
-
-        super();
 
         Digester digester = initDigester();
         for (int i = 0; i < streams.length; i++) {
@@ -194,12 +190,10 @@ public class ValidatorResources implements Serializable {
     public ValidatorResources(String[] uris)
             throws IOException, SAXException {
 
-        super();
-
         Digester digester = initDigester();
-        for (int i = 0; i < uris.length; i++) {
+        for (String element : uris) {
             digester.push(this);
-            digester.parse(uris[i]);
+            digester.parse(element);
         }
 
         this.process();
@@ -233,12 +227,10 @@ public class ValidatorResources implements Serializable {
     public ValidatorResources(URL[] urls)
             throws IOException, SAXException {
 
-        super();
-
         Digester digester = initDigester();
-        for (int i = 0; i < urls.length; i++) {
+        for (URL url : urls) {
             digester.push(this);
-            digester.parse(urls[i]);
+            digester.parse(url);
         }
 
         this.process();
@@ -327,7 +319,7 @@ public class ValidatorResources implements Serializable {
      */
     public void addFormSet(FormSet fs) {
         String key = this.buildKey(fs);
-        if (key.length() == 0) {// there can only be one default formset
+        if (key.isEmpty()) {// there can only be one default formset
             if (getLog().isWarnEnabled() && defaultFormSet != null) {
                 // warn the user he might not get the expected results
                 getLog().warn("Overriding default FormSet definition.");
@@ -411,9 +403,9 @@ public class ValidatorResources implements Serializable {
      * Assembles a Locale code from the given parts.
      */
     private String buildLocale(String lang, String country, String variant) {
-        String key = ((lang != null && lang.length() > 0) ? lang : "");
-        key += ((country != null && country.length() > 0) ? "_" + country : "");
-        key += ((variant != null && variant.length() > 0) ? "_" + variant : "");
+        String key = ((lang != null && !lang.isEmpty()) ? lang : "");
+        key += ((country != null && !country.isEmpty()) ? "_" + country : "");
+        key += ((variant != null && !variant.isEmpty()) ? "_" + variant : "");
         return key;
     }
 
@@ -461,7 +453,7 @@ public class ValidatorResources implements Serializable {
 
         // Try language/country/variant
         String key = this.buildLocale(language, country, variant);
-        if (key.length() > 0) {
+        if (!key.isEmpty()) {
             FormSet formSet = getFormSets().get(key);
             if (formSet != null) {
                 form = formSet.getForm(formKey);
@@ -473,7 +465,7 @@ public class ValidatorResources implements Serializable {
         // Try language/country
         if (form == null) {
             key = buildLocale(language, country, null);
-            if (key.length() > 0) {
+            if (!key.isEmpty()) {
                 FormSet formSet = getFormSets().get(key);
                 if (formSet != null) {
                     form = formSet.getForm(formKey);
@@ -484,7 +476,7 @@ public class ValidatorResources implements Serializable {
         // Try language
         if (form == null) {
             key = buildLocale(language, null, null);
-            if (key.length() > 0) {
+            if (!key.isEmpty()) {
                 FormSet formSet = getFormSets().get(key);
                 if (formSet != null) {
                     form = formSet.getForm(formKey);
@@ -542,15 +534,13 @@ public class ValidatorResources implements Serializable {
         }
         defaultFormSet.process(getConstants());
         // Loop through FormSets and merge if necessary
-        for (Iterator<String> i = getFormSets().keySet().iterator(); i.hasNext();) {
-            String key = i.next();
+        for (String key : getFormSets().keySet()) {
             FormSet fs = getFormSets().get(key);
             fs.merge(getParent(fs));
         }
 
         // Process Fully Constructed FormSets
-        for (Iterator<FormSet> i = getFormSets().values().iterator(); i.hasNext();) {
-            FormSet fs = i.next();
+        for (FormSet fs : getFormSets().values()) {
             if (!fs.isProcessed()) {
                 fs.process(getConstants());
             }
@@ -605,7 +595,7 @@ public class ValidatorResources implements Serializable {
 
         String key = buildLocale(language, country, variant);
 
-        if (key.length() == 0) {
+        if (key.isEmpty()) {
             return defaultFormSet;
         }
 

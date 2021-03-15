@@ -17,7 +17,7 @@
 package org.apache.commons.validator;
 
 
-/**                                                       
+/**
  * Performs Validation Test for <code>long</code> validations.
  *
  * @version $Revision$
@@ -47,7 +47,7 @@ public class LongTest extends AbstractNumberTest {
     public void testLongMin() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Long(Long.MIN_VALUE).toString());
+        info.setValue(Long.toString(Long.MIN_VALUE));
 
         valueTest(info, true);
     }
@@ -58,7 +58,7 @@ public class LongTest extends AbstractNumberTest {
     public void testLongMax() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Long(Long.MAX_VALUE).toString());
+        info.setValue(Long.toString(Long.MAX_VALUE));
 
         valueTest(info, true);
     }

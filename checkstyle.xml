@@ -16,8 +16,8 @@
  limitations under the License.
 -->
 <!DOCTYPE module PUBLIC
-    "-//Puppy Crawl//DTD Check Configuration 1.1//EN"
-    "http://www.puppycrawl.com/dtds/configuration_1_1.dtd">
+    "-//Checkstyle//DTD Checkstyle Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/configuration_1_2.dtd">
 
 
 <!--
@@ -42,8 +42,6 @@
 <module name="Checker">
 
    <module name="TreeWalker">
-
-    <property name="cacheFile" value="${checkstyle.cache.file}"/>
 
     <!-- Item 4 - Avoid creating duplicate objects -->
     <module name="IllegalInstantiation">
@@ -92,7 +90,6 @@
     </module>
     <module name="JavadocMethod"> <!-- also covers Item 44 -->
       <property name="scope" value="protected"/>
-      <property name="allowUndeclaredRTE" value="true"/>
     </module>
     <module name="JavadocVariable">
       <property name="scope" value="protected"/>
@@ -131,10 +128,18 @@
 
     <module name="MagicNumber"/>
 
-    <!-- This is needed for Suppression Comment Filters -->
-    <module name="FileContentsHolder"/>
+    <module name="SuppressionCommentFilter"/>
 
-  </module>
+    <!-- 
+      Allow comment to suppress checkstyle for a single line
+      e.g. // CHECKSTYLE IGNORE MagicNumber
+     -->
+    <module name="SuppressWithNearbyCommentFilter">
+      <property name="commentFormat" value="CHECKSTYLE IGNORE (\w+)"/>
+      <property name="checkFormat" value="$1"/>
+    </module>
+
+</module>
 
   <!-- enforce package documentation -->
   <module name="JavadocPackage">
@@ -154,20 +159,10 @@
     <property name="fileExtensions" value="java,xml"/>
   </module>
 
-  <module name="SuppressionCommentFilter"/>
-
   <module name="SuppressionFilter">
     <!-- config_loc is used by Eclipse plugin -->
     <property name="file" value="${config_loc}/checkstyle-suppressions.xml"/>
   </module>
 
-  <!-- 
-      Allow comment to suppress checkstyle for a single line
-      e.g. // CHECKSTYLE IGNORE MagicNumber
-   -->
-  <module name="SuppressWithNearbyCommentFilter">
-    <property name="commentFormat" value="CHECKSTYLE IGNORE (\w+)"/>
-    <property name="checkFormat" value="$1"/>
-  </module>
-
+  
 </module>

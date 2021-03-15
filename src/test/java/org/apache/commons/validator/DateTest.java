@@ -27,13 +27,13 @@ import org.xml.sax.SAXException;
  * @version $Revision$
  */
 public class DateTest extends AbstractCommonTest {
-    
+
     /**
      * The key used to retrieve the set of validation
      * rules from the xml file.
      */
     protected String FORM_KEY = "dateForm";
-    
+
     /**
      * The key used to retrieve the validator action.
      */
@@ -43,9 +43,9 @@ public class DateTest extends AbstractCommonTest {
     public DateTest(String name) {
         super(name);
     }
-    
+
     /**
-     * Load <code>ValidatorResources</code> from 
+     * Load <code>ValidatorResources</code> from
      * validator-numeric.xml.
      */
     @Override
@@ -74,7 +74,7 @@ public class DateTest extends AbstractCommonTest {
         valueTest(info, false);
     }
 
-    
+
     /**
      * Utlity class to run a test on a value.
      *
@@ -91,13 +91,11 @@ public class DateTest extends AbstractCommonTest {
         validator.setParameter(Validator.LOCALE_PARAM, Locale.US);
 
         // Get results of the validation.
-        ValidatorResults results = null;
-
         // throws ValidatorException,
         // but we aren't catching for testing
         // since no validation methods we use
         // throw this
-        results = validator.validate();
+        ValidatorResults results = validator.validate();
 
         assertNotNull("Results are null.", results);
 

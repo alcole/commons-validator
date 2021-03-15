@@ -53,7 +53,6 @@ public class DateValidator {
      * Protected constructor for subclasses to use.
      */
     protected DateValidator() {
-        super();
     }
 
     /**
@@ -72,7 +71,7 @@ public class DateValidator {
 
         if (value == null
                 || datePattern == null
-                || datePattern.length() <= 0) {
+                || datePattern.isEmpty()) {
 
             return false;
         }

@@ -19,7 +19,7 @@ package org.apache.commons.validator;
 
 
 
-/**                                                       
+/**
  * Performs Validation Test for <code>int</code> validations.
  *
  * @version $Revision$
@@ -50,7 +50,7 @@ public class IntegerTest extends AbstractNumberTest {
     public void testIntMin() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Integer(Integer.MIN_VALUE).toString());
+        info.setValue(Integer.toString(Integer.MIN_VALUE));
 
         valueTest(info, true);
     }
@@ -61,7 +61,7 @@ public class IntegerTest extends AbstractNumberTest {
     public void testIntegerMax() throws ValidatorException {
         // Create bean to run test on.
         ValueBean info = new ValueBean();
-        info.setValue(new Integer(Integer.MAX_VALUE).toString());
+        info.setValue(Integer.toString(Integer.MAX_VALUE));
 
         valueTest(info, true);
     }

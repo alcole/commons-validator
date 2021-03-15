@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.xml.sax.SAXException;
 
-/**                                                       
+/**
  * Performs Validation Test for e-mail validations.
  *
  *
@@ -42,12 +42,12 @@ public class EmailTest extends AbstractCommonTest {
    protected static String ACTION = "email";
 
 
-   public EmailTest(String name) {                  
-       super(name);                                      
-   }                                                     
+   public EmailTest(String name) {
+       super(name);
+   }
 
    /**
-    * Load <code>ValidatorResources</code> from 
+    * Load <code>ValidatorResources</code> from
     * validator-regexp.xml.
     */
    @Override
@@ -65,7 +65,7 @@ protected void setUp() throws IOException, SAXException {
       info.setValue("jsmith@apache.org");
       valueTest(info, true);
    }
-    
+
    /**
     * Tests the email validation with numeric domains.
     */
@@ -101,16 +101,16 @@ protected void setUp() throws IOException, SAXException {
 
         info.setValue("jsmith@apache.c");
         valueTest(info, false);
-        
+
         info.setValue("someone@yahoo.museum");
         valueTest(info, true);
-        
+
         info.setValue("someone@yahoo.mu-seum");
         valueTest(info, false);
     }
 
    /**
-    * <p>Tests the e-mail validation with a dash in 
+    * <p>Tests the e-mail validation with a dash in
     * the address.</p>
     */
    public void testEmailWithDash() throws ValidatorException {
@@ -131,7 +131,7 @@ protected void setUp() throws IOException, SAXException {
    }
 
    /**
-    * Tests the e-mail validation with a dot at the end of 
+    * Tests the e-mail validation with a dot at the end of
     * the address.
     */
    public void testEmailWithDotEnd() throws ValidatorException {
@@ -153,11 +153,11 @@ protected void setUp() throws IOException, SAXException {
 
         info.setValue("andy.noble@\u008fdata-workshop.com");
         valueTest(info, false);
-    
+
         // The ' character is valid in an email username.
         info.setValue("andy.o'reilly@data-workshop.com");
         valueTest(info, true);
-        
+
         // But not in the domain name.
         info.setValue("andy@o'reilly.data-workshop.com");
         valueTest(info, false);
@@ -165,7 +165,7 @@ protected void setUp() throws IOException, SAXException {
         info.setValue("foo+bar@i.am.not.in.us.example.com");
         valueTest(info, true);
     }
-   
+
    /**
     * Tests the email validation with commas.
     */
@@ -179,7 +179,7 @@ protected void setUp() throws IOException, SAXException {
         valueTest(info, false);
 
     }
-   
+
    /**
     * Tests the email validation with spaces.
     */
@@ -190,13 +190,15 @@ protected void setUp() throws IOException, SAXException {
         info.setValue("joeblow@ apache.org");
         valueTest(info, false);
         info.setValue(" joeblow@apache.org");
-        valueTest(info, true);
+        valueTest(info, false);
         info.setValue("joeblow@apache.org ");
-        valueTest(info, true);
+        valueTest(info, false);
         info.setValue("joe blow@apache.org ");
         valueTest(info, false);
         info.setValue("joeblow@apa che.org ");
         valueTest(info, false);
+        info.setValue("\"joe blow\"@apache.org");
+        valueTest(info, true);
 
     }
 
@@ -231,7 +233,7 @@ protected void setUp() throws IOException, SAXException {
 
     /**
      * Test that @localhost and @localhost.localdomain
-     *  addresses aren't declared valid by default 
+     *  addresses aren't declared valid by default
      */
     public void testEmailLocalhost() throws ValidatorException {
        ValueBean info = new ValueBean();
@@ -399,17 +401,17 @@ protected void setUp() throws IOException, SAXException {
     /**
      * Write this test based on perl Mail::RFC822::Address
      * which takes its example email address directly from RFC822
-     * 
+     *
      * @throws ValidatorException
-     * 
+     *
      * FIXME This test fails so disable it with a leading _ for 1.1.4 release.
      * The real solution is to fix the email parsing.
      */
     public void _testEmailFromPerl() throws ValidatorException {
         ValueBean info = new ValueBean();
-        for (int index = 0; index < testEmailFromPerl.length; index++) {
-            info.setValue(testEmailFromPerl[index].item);
-            valueTest(info, testEmailFromPerl[index].valid);
+        for (ResultPair element : testEmailFromPerl) {
+            info.setValue(element.item);
+            valueTest(info, element.valid);
         }
     }
 
@@ -420,28 +422,26 @@ protected void setUp() throws IOException, SAXException {
     * @param passed    Whether or not the test is expected to pass.
     */
    private void valueTest(ValueBean info, boolean passed) throws ValidatorException {
-      // Construct validator based on the loaded resources 
+      // Construct validator based on the loaded resources
       // and the form key
       Validator validator = new Validator(resources, FORM_KEY);
-      // add the name bean to the validator as a resource 
+      // add the name bean to the validator as a resource
       // for the validations to be performed on.
       validator.setParameter(Validator.BEAN_PARAM, info);
 
       // Get results of the validation.
-      ValidatorResults results = null;
-      
-      // throws ValidatorException, 
-      // but we aren't catching for testing 
-      // since no validation methods we use 
+      // throws ValidatorException,
+      // but we aren't catching for testing
+      // since no validation methods we use
       // throw this
-      results = validator.validate();
-      
+      ValidatorResults results = validator.validate();
+
       assertNotNull("Results are null.", results);
-      
+
       ValidatorResult result = results.getValidatorResult("value");
 
       assertNotNull(ACTION + " value ValidatorResult should not be null.", result);
       assertTrue("Value "+info.getValue()+" ValidatorResult should contain the '" + ACTION +"' action.", result.containsAction(ACTION));
       assertTrue("Value "+info.getValue()+"ValidatorResult for the '" + ACTION +"' action should have " + (passed ? "passed" : "failed") + ".", (passed ? result.isValid(ACTION) : !result.isValid(ACTION)));
     }
-}                                                         
+}

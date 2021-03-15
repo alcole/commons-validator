@@ -33,12 +33,12 @@ public class RetrieveFormTest extends TestCase {
      * Resources used for validation tests.
      */
     private ValidatorResources resources = null;
-    
+
     /**
      * Prefix for the forms.
      */
     private static final String FORM_PREFIX = "testForm_";
-    
+
     /**
      * Prefix for the forms.
      */
@@ -52,7 +52,7 @@ public class RetrieveFormTest extends TestCase {
         super(name);
     }
 
-    /** 
+    /**
      * Load <code>ValidatorResources</code> from multiple xml files.
      */
     @Override
@@ -64,8 +64,8 @@ public class RetrieveFormTest extends TestCase {
 
         this.resources = new ValidatorResources(streams);
 
-        for (int i = 0; i < streams.length; i++) {
-            streams[i].close();
+        for (InputStream stream : streams) {
+            stream.close();
         }
     }
 
@@ -218,7 +218,7 @@ public class RetrieveFormTest extends TestCase {
         // value of the field.
         Field testField = testForm.getField("testProperty");
         assertEquals("Incorrect Form '"   + formKey  + "' for locale '" + locale + "'",
-                     expectedVarValue, 
+                     expectedVarValue,
                      testField.getVarValue("localeVar"));
     }
 
